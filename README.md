@@ -127,15 +127,16 @@ macOS will refuse to load the unsigned bundle until it is unquarantined — see
 
 ## Download
 
-**[v0.1.0](https://github.com/stoatworks-labs/tinsel/releases/tag/v0.1.0)** — prebuilt for macOS and Windows. Pick your platform:
+**[v0.2.0](https://github.com/stoatworks-labs/tinsel/releases/tag/v0.2.0)** — prebuilt for macOS and Windows. Pick your platform:
 
 <details>
 <summary><b>macOS</b> — Universal (Apple Silicon + Intel)</summary>
 
 | Build | Download | Size |
 | --- | --- | --- |
-| Universal (Apple Silicon + Intel) · .dmg disk image | [`tinsel-0.1.0-macos-universal.dmg`](https://github.com/stoatworks-labs/tinsel/releases/download/v0.1.0/tinsel-0.1.0-macos-universal.dmg) | 210 KB |
+| Universal (Apple Silicon + Intel) · .dmg disk image | [`tinsel-0.2.0-macos-universal.dmg`](https://github.com/stoatworks-labs/tinsel/releases/download/v0.2.0/tinsel-0.2.0-macos-universal.dmg) | 210 KB |
 | Universal (Apple Silicon + Intel) · .zip archive | [`tinsel-macos-universal.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-macos-universal.zip) | 167 KB |
+| Universal (Apple Silicon + Intel) · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`tinsel-ofx-macos-universal.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-ofx-macos-universal.zip) | 260 KB |
 
 </details>
 
@@ -144,8 +145,9 @@ macOS will refuse to load the unsigned bundle until it is unquarantined — see
 
 | Build | Download | Size |
 | --- | --- | --- |
-| x64 · .exe installer | [`tinsel-0.1.0-windows-x86_64-setup.exe`](https://github.com/stoatworks-labs/tinsel/releases/download/v0.1.0/tinsel-0.1.0-windows-x86_64-setup.exe) | 217 KB |
+| x64 · .exe installer | [`tinsel-0.2.0-windows-x86_64-setup.exe`](https://github.com/stoatworks-labs/tinsel/releases/download/v0.2.0/tinsel-0.2.0-windows-x86_64-setup.exe) | 218 KB |
 | x64 · .zip archive | [`tinsel-windows-x86_64.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-windows-x86_64.zip) | 112 KB |
+| x64 · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`tinsel-ofx-windows-x86_64.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-ofx-windows-x86_64.zip) | 77 KB |
 
 </details>
 
