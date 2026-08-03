@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PassBuffer.h"
+#include "Presets.h"
 
 #include <FFGLSDK.h>
 
@@ -98,10 +99,28 @@ public:
 		PT_DIM,
 		PT_MIX,
 
+		//Preset. Declared after the real controls so their IDs — which a saved
+		//composition refers to — do not shift under existing users.
+		PT_PRESET,
+
 		PT_COUNT
 	};
 
 private:
+	/// The ParamID each presets::Param drives, in presets::Param order. The
+	/// preset table stays host-agnostic; this is the FFGL binding of it.
+	static constexpr unsigned int kPresetParamIDs[ tinsel::presets::kParamCount ] = {
+		PT_LAYOUT, PT_TURNS, PT_LAYOUT_ANGLE, PT_DENSITY, PT_BULB_SIZE, PT_REVERSE,
+		PT_EFFECT, PT_SPEED, PT_INTENSITY, PT_PALETTE, PT_SPREAD,
+		PT_C1_R, PT_C1_G, PT_C1_B, PT_C2_R, PT_C2_G, PT_C2_B,
+		PT_SATURATION, PT_BRIGHTNESS, PT_SOURCE_TINT,
+		PT_GLOW, PT_GLOW_SIZE, PT_BACKGROUND, PT_DIM
+	};
+
+	/// Copy a factory preset's values into params[] and raise value events so
+	/// the host re-reads the sliders. `presetIndex` is 1-based; 0 is Custom.
+	void applyPreset( int presetIndex );
+
 	/// Bake the palettes and upload them. Once, at InitGL: the table does not
 	/// depend on any parameter, which is the point of keeping the two
 	/// colour-driven palettes out of it.

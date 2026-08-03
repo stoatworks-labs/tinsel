@@ -33,6 +33,7 @@
 #include "../Controls.h"
 #include "../Effects.h"
 #include "../Palette.h"
+#include "../Presets.h"
 
 namespace
 {
@@ -81,6 +82,7 @@ constexpr const char* kParamGlowSize    = "glowSize";
 constexpr const char* kParamBackground  = "background";
 constexpr const char* kParamDim         = "dim";
 constexpr const char* kParamMix         = "mix";
+constexpr const char* kParamPreset      = "preset";
 
 const char* const kSourceNames[]     = { "Luma", "Alpha", "Chroma", "Luma or Alpha" };
 const char* const kLayoutNames[]     = { "Spiral", "Angle", "Linear", "Radial", "Random" };
@@ -444,6 +446,91 @@ public:
 		background  = fetchChoiceParam( kParamBackground );
 		dim         = fetchDoubleParam( kParamDim );
 		mixParam    = fetchDoubleParam( kParamMix );
+		preset      = fetchChoiceParam( kParamPreset );
+	}
+
+	void changedParam( const OFX::InstanceChangedArgs& args, const std::string& paramName ) override
+	{
+		using namespace tinsel::presets;
+
+		if( paramName == kParamPreset )
+		{
+			int chosen = 0;
+			preset->getValue( chosen );
+			if( chosen <= 0 || chosen > kCount || applyingPreset )
+				return;
+
+			// The copy IS the preset — same table as the FFGL build, same 0..1
+			// space. One edit block so undo takes the whole preset back at once.
+			const Preset& p = kPresets[ chosen - 1 ];
+			applyingPreset  = true;
+			beginEditBlock( "Preset" );
+			setChoice( layout, p.v[ kLayout ] );
+			setDouble( turns, p.v[ kTurns ] );
+			setDouble( layoutAngle, p.v[ kLayoutAngle ] );
+			setDouble( density, p.v[ kDensity ] );
+			setDouble( bulbSize, p.v[ kBulbSize ] );
+			setBool( reverse, p.v[ kReverse ] );
+			setChoice( effect, p.v[ kEffect ] );
+			setDouble( speed, p.v[ kSpeed ] );
+			setDouble( intensity, p.v[ kIntensity ] );
+			setChoice( palette, p.v[ kPalette ] );
+			setDouble( spread, p.v[ kSpread ] );
+			setRGB( colour1, p.v[ kC1R ], p.v[ kC1G ], p.v[ kC1B ] );
+			setRGB( colour2, p.v[ kC2R ], p.v[ kC2G ], p.v[ kC2B ] );
+			setDouble( saturation, p.v[ kSaturation ] );
+			setDouble( brightness, p.v[ kBrightness ] );
+			setDouble( sourceTint, p.v[ kSourceTint ] );
+			setDouble( glow, p.v[ kGlow ] );
+			setDouble( glowSize, p.v[ kGlowSize ] );
+			setChoice( background, p.v[ kBackground ] );
+			setDouble( dim, p.v[ kDim ] );
+			endEditBlock();
+			applyingPreset = false;
+			return;
+		}
+
+		// Editing a covered control while a preset is active hands control back
+		// to the sliders. Judged by value, not by the change reason: hosts are
+		// not consistent about reasons, but "still equal to the preset" is
+		// unambiguous and also absorbs the host echoing our own setValues.
+		if( applyingPreset || args.reason == OFX::eChangeTime )
+			return;
+
+		int active = 0;
+		preset->getValue( active );
+		if( active <= 0 || active > kCount )
+			return;
+
+		const Preset& p    = kPresets[ active - 1 ];
+		const bool covered =
+			( paramName == kParamLayout && choiceDiffers( layout, p.v[ kLayout ] ) ) ||
+			( paramName == kParamTurns && doubleDiffers( turns, p.v[ kTurns ] ) ) ||
+			( paramName == kParamLayoutAngle && doubleDiffers( layoutAngle, p.v[ kLayoutAngle ] ) ) ||
+			( paramName == kParamDensity && doubleDiffers( density, p.v[ kDensity ] ) ) ||
+			( paramName == kParamBulbSize && doubleDiffers( bulbSize, p.v[ kBulbSize ] ) ) ||
+			( paramName == kParamReverse && boolDiffers( reverse, p.v[ kReverse ] ) ) ||
+			( paramName == kParamEffect && choiceDiffers( effect, p.v[ kEffect ] ) ) ||
+			( paramName == kParamSpeed && doubleDiffers( speed, p.v[ kSpeed ] ) ) ||
+			( paramName == kParamIntensity && doubleDiffers( intensity, p.v[ kIntensity ] ) ) ||
+			( paramName == kParamPalette && choiceDiffers( palette, p.v[ kPalette ] ) ) ||
+			( paramName == kParamSpread && doubleDiffers( spread, p.v[ kSpread ] ) ) ||
+			( paramName == kParamColour1 && rgbDiffers( colour1, p.v[ kC1R ], p.v[ kC1G ], p.v[ kC1B ] ) ) ||
+			( paramName == kParamColour2 && rgbDiffers( colour2, p.v[ kC2R ], p.v[ kC2G ], p.v[ kC2B ] ) ) ||
+			( paramName == kParamSaturation && doubleDiffers( saturation, p.v[ kSaturation ] ) ) ||
+			( paramName == kParamBrightness && doubleDiffers( brightness, p.v[ kBrightness ] ) ) ||
+			( paramName == kParamSourceTint && doubleDiffers( sourceTint, p.v[ kSourceTint ] ) ) ||
+			( paramName == kParamGlow && doubleDiffers( glow, p.v[ kGlow ] ) ) ||
+			( paramName == kParamGlowSize && doubleDiffers( glowSize, p.v[ kGlowSize ] ) ) ||
+			( paramName == kParamBackground && choiceDiffers( background, p.v[ kBackground ] ) ) ||
+			( paramName == kParamDim && doubleDiffers( dim, p.v[ kDim ] ) );
+
+		if( covered )
+		{
+			applyingPreset = true;
+			preset->setValue( 0 );
+			applyingPreset = false;
+		}
 	}
 
 	void render( const OFX::RenderArguments& args ) override
@@ -973,6 +1060,59 @@ private:
 	OFX::DoubleParam* glow         = nullptr;
 	OFX::DoubleParam* glowSize     = nullptr;
 	OFX::ChoiceParam* background   = nullptr;
+	OFX::ChoiceParam* preset       = nullptr;
+
+	// The preset table is plain floats; these give each param type its
+	// reading of one. Option values are element indices, booleans are 0/1.
+	static bool doubleDiffers( OFX::DoubleParam* p, float v )
+	{
+		double current = 0.0;
+		p->getValue( current );
+		return std::fabs( current - double( v ) ) > 1e-4;
+	}
+	static bool boolDiffers( OFX::BooleanParam* p, float v )
+	{
+		bool current = false;
+		p->getValue( current );
+		return current != ( v > 0.5f );
+	}
+	static bool choiceDiffers( OFX::ChoiceParam* p, float v )
+	{
+		int current = 0;
+		p->getValue( current );
+		return current != int( std::lround( v ) );
+	}
+	static bool rgbDiffers( OFX::RGBParam* p, float r, float g, float b )
+	{
+		double cr = 0.0, cg = 0.0, cb = 0.0;
+		p->getValue( cr, cg, cb );
+		return std::fabs( cr - double( r ) ) > 1e-4 || std::fabs( cg - double( g ) ) > 1e-4
+			   || std::fabs( cb - double( b ) ) > 1e-4;
+	}
+	static void setDouble( OFX::DoubleParam* p, float v )
+	{
+		if( doubleDiffers( p, v ) )
+			p->setValue( double( v ) );
+	}
+	static void setBool( OFX::BooleanParam* p, float v )
+	{
+		if( boolDiffers( p, v ) )
+			p->setValue( v > 0.5f );
+	}
+	static void setChoice( OFX::ChoiceParam* p, float v )
+	{
+		if( choiceDiffers( p, v ) )
+			p->setValue( int( std::lround( v ) ) );
+	}
+	static void setRGB( OFX::RGBParam* p, float r, float g, float b )
+	{
+		if( rgbDiffers( p, r, g, b ) )
+			p->setValue( double( r ), double( g ), double( b ) );
+	}
+
+	/// True while our own setValues are in flight, so the resulting
+	/// changedParam callbacks are not mistaken for the operator editing.
+	bool applyingPreset = false;
 	OFX::DoubleParam* dim          = nullptr;
 	OFX::DoubleParam* mixParam     = nullptr;
 };
@@ -1032,6 +1172,22 @@ void TinselPluginFactory::describeInContext( OFX::ImageEffectDescriptor& desc, O
 	dstClip->setSupportsTiles( false );
 
 	OFX::PageParamDescriptor* page = desc.definePageParam( "Controls" );
+
+	// Factory presets, from the same table the FFGL build reads (Presets.h).
+	// Custom is not a preset: it means the sliders are the truth.
+	OFX::ChoiceParamDescriptor* presetParam = desc.defineChoiceParam( kParamPreset );
+	presetParam->setLabels( "Preset", "Preset", "Preset" );
+	presetParam->setHint( "Named string-light looks. Picking one sets the covered controls; "
+	                      "editing any of them afterwards falls back to Custom. The Edge "
+	                      "group is left alone — that tuning belongs to your artwork." );
+	presetParam->appendOption( "Custom" );
+	for( int i = 0; i < tinsel::presets::kCount; ++i )
+		presetParam->appendOption( tinsel::presets::kPresets[ i ].name );
+	presetParam->setDefault( 0 );
+	presetParam->setIsPersistant( true );
+	presetParam->setEvaluateOnChange( false );//the copied values re-render; the label itself does not
+	presetParam->setAnimates( false );
+	page->addChild( *presetParam );
 
 	OFX::GroupParamDescriptor* edge = desc.defineGroupParam( "Edge" );
 	edge->setLabels( "Edge", "Edge", "Edge" );

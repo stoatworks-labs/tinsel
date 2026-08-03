@@ -56,6 +56,11 @@ CONTEXT = {
     "Intensity": ["Pattern=4"],                  # chase, whose duty it changes
     "Spread": ["Pattern=1", "Palette=2"],        # a gradient, on a palette
     "Reverse": ["Pattern=7", "Layout=2"],        # a comet along a linear strip
+    # The sweep's positions only ever reach preset 1, which is deliberately
+    # the plugin's own defaults ("Warm Twinkle") — applied over defaults it
+    # provably changes nothing. Start away from the defaults so applying it
+    # is visible.
+    "Preset": ["Pattern=4"],
 }
 
 # Positions to try. Three rather than two: a control that is a no-op at both

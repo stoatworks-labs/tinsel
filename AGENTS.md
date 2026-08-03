@@ -288,3 +288,29 @@ offline-harness shape and `sweep.py` all come from **porthole**, **old-cathode**
 and **asciify**, which are the other FFGL effects in the fleet. The `--pipe`
 frame format and the `--script` cue file are identical across all of them on
 purpose, so one build script can film any of them.
+
+## Factory presets
+
+`source/Presets.h` is one table of named looks in the host-facing 0..1
+parameter space, and it drives **both** builds — the FFGL constructor and the
+OFX describe each read it, so a preset cannot drift between Resolume and
+Resolve. Element 0 of the dropdown is always **Custom**, which is not in the
+table: it means "the sliders are the truth".
+
+The mechanics are deliberately copy-based. Picking a preset copies the table
+row into the real parameters — the FFGL side raises `FF_EVENT_FLAG_VALUE` per
+changed parameter so the host re-reads its sliders, the OFX side setValues
+inside one edit block so undo takes the whole preset back at once. A host that
+ignores the events still renders the preset correctly and merely shows stale
+knobs. Editing any covered parameter afterwards flips the dropdown back to
+Custom — judged by comparing values, not by the change reason, so a host
+echoing our own writes cannot un-set the preset.
+
+A preset covers layout, animation, colour and look. The Edge group is
+deliberately untouched — sensitivity and thickness are tuned to the operator's
+artwork. The sweep needs its CONTEXT entry for Preset: position 1 is the
+defaults, named, and applied over defaults it provably changes nothing.
+
+Verified by rendering a preset and its hand-set equivalent through the offline
+harness and `ofxprobe --edit` (which delivers the set as a real user edit,
+with `kOfxActionInstanceChanged`) and comparing byte-for-byte.
