@@ -121,6 +121,36 @@ macOS builds universal (arm64 + x86_64) by default. Add
 macOS will refuse to load the unsigned bundle until it is unquarantined — see
 [docs/UNSIGNED.md](docs/UNSIGNED.md).
 
+<!-- downloads:start -->
+
+## Download
+
+**[v0.1.0](https://github.com/stoatworks-labs/tinsel/releases/tag/v0.1.0)** — prebuilt for macOS and Windows. Pick your platform:
+
+<details>
+<summary><b>macOS</b> — Universal (Apple Silicon + Intel)</summary>
+
+| Build | Download | Size |
+| --- | --- | --- |
+| Universal (Apple Silicon + Intel) · .dmg disk image | [`tinsel-0.1.0-macos-universal.dmg`](https://github.com/stoatworks-labs/tinsel/releases/download/v0.1.0/tinsel-0.1.0-macos-universal.dmg) | 210 KB |
+| Universal (Apple Silicon + Intel) · .zip archive | [`tinsel-macos-universal.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-macos-universal.zip) | 167 KB |
+
+</details>
+
+<details>
+<summary><b>Windows</b> — x64</summary>
+
+| Build | Download | Size |
+| --- | --- | --- |
+| x64 · .exe installer | [`tinsel-0.1.0-windows-x86_64-setup.exe`](https://github.com/stoatworks-labs/tinsel/releases/download/v0.1.0/tinsel-0.1.0-windows-x86_64-setup.exe) | 217 KB |
+| x64 · .zip archive | [`tinsel-windows-x86_64.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-windows-x86_64.zip) | 112 KB |
+
+</details>
+
+All builds, checksums and release notes: [github.com/stoatworks-labs/tinsel/releases](https://github.com/stoatworks-labs/tinsel/releases).
+
+<!-- downloads:end -->
+
 ## Status
 
 Verified by measurement on an M4 Max, macOS 26.4:

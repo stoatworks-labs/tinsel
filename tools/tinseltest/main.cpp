@@ -19,6 +19,20 @@
         tinseltest --card /tmp/card.png     the test card on its own
         tinseltest --pipe                   raw frames in, raw frames out
 
+    `--script` is a plain text file of `frame  Parameter Name  value` lines.
+    Values are held before the first key and after the last, and linearly
+    interpolated between. The format is identical to old-cathode's octest,
+    porthole's phtest and resolume-scopes' sctest on purpose, so one build.py
+    can film any of them.
+
+    Note what interpolation means for an **option** parameter -- Pattern,
+    Palette, Layout, Detect On, Background. Moving one produces the intermediate
+    values on the way, so a change from Chase to Comet passes through Theater
+    Chase and Running Lights. Key them one frame apart to cut, and give every
+    such parameter a hold key at the END of each section it must not move in: a
+    single key at the start of each section slides it continuously across the
+    whole reel, and the result looks deliberate.
+
     `--pipe` takes the fleet's frame format so one script can film any of the
     FFGL plugins:
 
@@ -43,6 +57,7 @@
 #include <chrono>
 #include <cstring>
 #include <fstream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <unistd.h>
@@ -771,27 +786,79 @@ void usage()
 // number is reached. Same format as porthole, old-cathode and asciify, so one
 // filming script drives any of them.
 //---------------------------------------------------------------------------
-struct Cue
-{
-	int frame;
-	std::string assignment;
-};
+using Track = std::vector< std::pair< int, float > >;
 
-std::vector< Cue > loadScript( const std::string& path )
+std::map< std::string, Track > loadScript( const std::string& path, std::string& error )
 {
-	std::vector< Cue > cues;
+	std::map< std::string, Track > tracks;
 	std::ifstream file( path );
+	if( !file )
+	{
+		error = "cannot open " + path;
+		return tracks;
+	}
+
 	std::string line;
+	int lineNumber = 0;
 	while( std::getline( file, line ) )
 	{
-		if( line.empty() || line[ 0 ] == '#' )
-			continue;
-		std::istringstream stream( line );
-		Cue cue {};
-		if( stream >> cue.frame >> cue.assignment )
-			cues.push_back( cue );
+		++lineNumber;
+		const size_t hash = line.find( '#' );
+		if( hash != std::string::npos )
+			line.erase( hash );
+		std::istringstream in( line );
+
+		int frame = 0;
+		if( !( in >> frame ) )
+			continue;//blank or comment
+
+		//The name is everything up to the last token, because parameters have
+		//spaces in them ("Lamp Size") and the value never does.
+		std::vector< std::string > words;
+		std::string word;
+		while( in >> word )
+			words.push_back( word );
+		if( words.size() < 2 )
+		{
+			error = path + ":" + std::to_string( lineNumber ) + ": expected `frame Parameter Name value`";
+			return {};
+		}
+
+		const float value = std::strtof( words.back().c_str(), nullptr );
+		words.pop_back();
+		std::string name = words.front();
+		for( size_t i = 1; i < words.size(); ++i )
+			name += " " + words[ i ];
+
+		tracks[ name ].emplace_back( frame, value );
 	}
-	return cues;
+
+	for( auto& entry : tracks )
+		std::sort( entry.second.begin(), entry.second.end() );
+	return tracks;
+}
+
+float valueAt( const Track& track, int frame )
+{
+	if( track.empty() )
+		return 0.0f;
+	if( frame <= track.front().first )
+		return track.front().second;
+	if( frame >= track.back().first )
+		return track.back().second;
+
+	for( size_t i = 1; i < track.size(); ++i )
+	{
+		if( frame <= track[ i ].first )
+		{
+			const auto& a    = track[ i - 1 ];
+			const auto& b    = track[ i ];
+			const float span = static_cast< float >( b.first - a.first );
+			const float t    = span > 0.0f ? ( static_cast< float >( frame - a.first ) / span ) : 1.0f;
+			return a.second + ( b.second - a.second ) * t;
+		}
+	}
+	return track.back().second;
 }
 } // namespace
 
@@ -967,7 +1034,44 @@ int main( int argc, char** argv )
 	if( wantPipe )
 	{
 		//Raw RGBA in, raw RGBA out, one frame at a time.
-		const std::vector< Cue > cues = loadScript( scriptPath );
+		//Resolve the script's parameter names to indices once, up front, and
+		//refuse to run on a name that is not a parameter. A misspelled name that
+		//silently did nothing would produce a take that looks deliberate and is
+		//wrong -- the reel would simply hold whatever the default was, with a
+		//caption over it describing the control that never moved.
+		std::map< unsigned int, Track > automation;
+		if( !scriptPath.empty() )
+		{
+			std::string error;
+			const std::map< std::string, Track > tracks = loadScript( scriptPath, error );
+			if( !error.empty() )
+			{
+				std::fprintf( stderr, "%s\n", error.c_str() );
+				return 2;
+			}
+
+			const std::vector< NamedParameter > known = listParameters( plugin );
+			for( const auto& entry : tracks )
+			{
+				bool found = false;
+				for( const NamedParameter& parameter : known )
+				{
+					if( parameter.name != entry.first )
+						continue;
+					automation[ parameter.index ] = entry.second;
+					found                         = true;
+					break;
+				}
+				if( !found )
+				{
+					std::fprintf( stderr,
+					              "script names '%s', which is not a parameter (try --list)\n",
+					              entry.first.c_str() );
+					return 2;
+				}
+			}
+		}
+
 		std::vector< unsigned char > frame( static_cast< size_t >( width ) * height * 4 );
 
 		for( int index = 0;; ++index )
@@ -983,13 +1087,8 @@ int main( int argc, char** argv )
 			if( filled < frame.size() )
 				break;
 
-			for( const Cue& cue : cues )
-			{
-				if( cue.frame != index )
-					continue;
-				std::string error;
-				applySetting( plugin, cue.assignment, error );
-			}
+			for( const auto& track : automation )
+				plugin.SetFloatParameter( track.first, valueAt( track.second, index ) );
 
 			//Same synthetic clock as the still path, so a filmed sequence
 			//advances at the frame rate it will be played back at rather than
