@@ -225,6 +225,9 @@ uniform float Saturation;
 uniform float Brightness;
 uniform float SourceTint;
 
+uniform float Audio[ 64 ]; //smoothed spectrum, low frequencies first
+uniform float AudioLevel;  //0 ignores the spectrum entirely
+
 in vec2 uv;
 out vec4 fragColor;
 
@@ -569,6 +572,16 @@ void main()
 		sBulb = Hash01( bulb );
 
 	vec2 result = evaluate( int( EffectIndex + 0.5 ), sBulb, bulb, Time, Intensity, Spread );
+
+	//Audio: a per-lamp brightness gate from the host's FFT, laid along the
+	//strip's running order with the low frequencies at the start. Orthogonal
+	//to the pattern on purpose -- Solid with Audio Level up is a spectrum
+	//analyser hung along the outline, and every other pattern ducks and
+	//swells where its own slice of the spectrum does. Deliberately NOT inside
+	//the effect library: the library is mirrored in Effects.cpp and proved
+	//against it, and the spectrum is host state the harness cannot mirror.
+	float band = Audio[ clamp( int( sBulb * 64.0 ), 0, 63 ) ];
+	result.y *= mix( 1.0, band, AudioLevel );
 
 	//The lamp itself: distance from its centre, in pixels, against a radius in
 	//pixels. Where the radius exceeds half the spacing the lamps run into one

@@ -153,6 +153,20 @@ the same side and the comet appears to travel tail-first.
 **Speed** is in cycles per second, and **zero means frozen** — useful for a static string of lamps.
 **Intensity** is each pattern's second knob and means whatever that pattern needs it to.
 
+**Sync** (at the bottom of the parameter list) changes what Speed means. **Free** is the default:
+cycles per second, running on its own clock. **Beat** and **Bar** lock the pattern to Resolume's
+BPM — Speed becomes cycles *per beat* or *per bar*, and a cycle boundary lands exactly on the
+grid, so a Chase steps on the beat and a Strobe fires on the downbeat. At the default Speed
+position that is one cycle per beat. Changing Speed while synced makes the pattern jump — it has
+to, because the new division must land on the grid too. Prefer setting Speed first, then Sync.
+
+**Audio** and **Audio Level** (also at the bottom) hang Resolume's spectrum along the string.
+Pick an audio source on the Audio parameter, turn Audio Level up, and every lamp is gated by its
+own slice of the spectrum — low frequencies at the start of the strip. On the **Solid** pattern
+that is a spectrum analyser wound round the outline; on any other pattern the lamps duck and
+swell where their own band does. This is per-lamp: Resolume's own per-parameter audio link can
+pump one slider, but it cannot give two hundred lamps two hundred different bands.
+
 | Pattern | What it does | What Intensity changes |
 | --- | --- | --- |
 | Solid | Every lamp on, one palette colour | — |

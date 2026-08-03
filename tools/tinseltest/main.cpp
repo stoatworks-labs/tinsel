@@ -637,6 +637,33 @@ int runEffectCheck()
     per-frame cost, and averaging them in makes a fast effect look slow in
     exactly the case -- a short run -- where somebody is most likely to measure.
 */
+/// Drive the plugin's clock and its beat clock together. The synthetic
+/// transport is 120 BPM in 4/4 from time zero -- bar N starts at exactly
+/// 2N seconds -- so the Beat and Bar sync modes are as reproducible offline
+/// as Free is. Every path that advances time goes through here; a path that
+/// called SetTime alone would leave barPhase frozen at zero, and the synced
+/// modes would step once a bar instead of animating.
+void driveClock( Tinsel& plugin, double seconds )
+{
+	constexpr double kBpm       = 120.0;
+	constexpr double barSeconds = 240.0 / kBpm;
+	plugin.SetTime( seconds );
+	plugin.SetBeatInfo( static_cast< float >( kBpm ),
+	                    static_cast< float >( std::fmod( seconds, barSeconds ) / barSeconds ) );
+
+	// A synthetic spectrum too, written the way the host writes one: one value
+	// per element of the Audio buffer. Without it Audio Level measurably does
+	// nothing offline and the sweep would report it dead. A fixed shape rather
+	// than anything time-driven, so renders stay reproducible: bass-heavy like
+	// programme material, with a ripple so neighbouring bands differ.
+	for( int bin = 0; bin < kAudioBins; ++bin )
+	{
+		const float across = static_cast< float >( bin ) / static_cast< float >( kAudioBins - 1 );
+		const float level  = 0.7f * ( 1.0f - across ) * ( 1.0f - across ) + 0.2f * ( 0.5f + 0.5f * std::sin( 25.0f * across ) );
+		plugin.SetParamElementValue( Tinsel::PT_AUDIO, static_cast< unsigned int >( bin ), level );
+	}
+}
+
 double benchAt( Tinsel& plugin, int width, int height, int frames, double fps )
 {
 	const std::vector< unsigned char > card = buildCard( width, height );
@@ -656,7 +683,7 @@ double benchAt( Tinsel& plugin, int width, int height, int frames, double fps )
 	process.HostFBO             = outputFBO;
 
 	auto renderOne = [ & ]( int frame ) {
-		plugin.SetTime( static_cast< double >( frame ) / fps );
+		driveClock( plugin, static_cast< double >( frame ) / fps );
 		glBindFramebuffer( GL_FRAMEBUFFER, outputFBO );
 		glViewport( 0, 0, width, height );
 		plugin.ProcessOpenGL( &process );
@@ -1094,7 +1121,7 @@ int main( int argc, char** argv )
 			//advances at the frame rate it will be played back at rather than
 			//at whatever rate the pipe happens to deliver -- a stall in ffmpeg
 			//must not show up as the effect speeding up afterwards.
-			plugin.SetTime( static_cast< double >( index ) / fps );
+			driveClock( plugin, static_cast< double >( index ) / fps );
 
 			//The card is flipped on the way in because a raw frame arrives top
 			//row first and GL wants bottom row first.
@@ -1140,7 +1167,7 @@ int main( int argc, char** argv )
 		//tools/sweep.py reported. Worse, what little time *did* pass was
 		//whatever the machine happened to take, so no two runs produced the
 		//same picture and nothing here could be compared against anything.
-		plugin.SetTime( static_cast< double >( frame ) / fps );
+		driveClock( plugin, static_cast< double >( frame ) / fps );
 
 		if( noise > 0.0f )
 		{

@@ -5,6 +5,12 @@
 
 #include <FFGLSDK.h>
 
+#include <array>
+
+/// Spectrum bins in the Audio buffer parameter, and in the light shader's
+/// `Audio[]` uniform. The two must agree, and the shader's is a literal.
+constexpr int kAudioBins = 64;
+
 /**
     Tinsel -- edge-detected outlines lit as a string of LEDs, for Resolume.
 
@@ -103,6 +109,17 @@ public:
 		//composition refers to — do not shift under existing users.
 		PT_PRESET,
 
+		//Sync. Appended for the same reason: this arrived after v0.1.0 shipped,
+		//and inserting it next to Speed — where it belongs — would renumber
+		//every parameter after it in every saved composition.
+		PT_SYNC,
+
+		//Audio. Appended likewise. PT_AUDIO is an FFT buffer (FF_TYPE_BUFFER,
+		//FF_USAGE_FFT): Resolume shows it as an audio-source picker and writes
+		//one spectrum bin per element, low frequencies first.
+		PT_AUDIO,
+		PT_AUDIO_LEVEL,
+
 		PT_COUNT
 	};
 
@@ -156,10 +173,28 @@ private:
 	// operator is nudging it, which is exactly when it is being watched.
 	// Integrating the rate instead means Speed changes what happens next and
 	// nothing else.
+	//
+	// That holds for Sync = Free only. In Beat and Bar mode the phase is
+	// *absolute* -- recovered from the host's tempo and bar position each
+	// frame -- because the entire point of those modes is that a cycle
+	// boundary lands on the grid, and an integrated phase drifts off it.
 	//---------------------------------------------------------------------
 	double hostTime     = -1.0;
 	double lastHostTime = -1.0;
 	double phase        = 0.0;
+
+	//---------------------------------------------------------------------
+	// Audio.
+	//
+	// The host writes one spectrum bin per element of PT_AUDIO; UpdateAudio
+	// runs them through an attack/release filter into `audioLevel`, and the
+	// light pass reads that as a uniform array -- a per-lamp brightness gate
+	// laid along the strip, orthogonal to whatever pattern is running.
+	//---------------------------------------------------------------------
+	void UpdateAudio();
+
+	std::array< float, kAudioBins > audioLevel = {};
+	double audioClock = -1.0;
 
 	/// Set when the history buffers hold nothing worth blending against -- the
 	/// first frame, and any frame after a resize. Without it the first

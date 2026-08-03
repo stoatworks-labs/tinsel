@@ -68,6 +68,12 @@ CONTEXT = {
 # and it costs one render to stop worrying about it.
 POSITIONS = ["0.0", "0.5", "1.0"]
 
+# Parameters with no scalar float to sweep. "Audio" is the FFT buffer: its
+# float value is meaningless, so sweeping it proves nothing and reports a
+# false dead. The harness feeds every render a synthetic spectrum instead, and
+# "Audio Level" is the sweepable proof that the buffer reaches the lamps.
+SKIP = {"Audio"}
+
 
 def render(binary, out, settings, frames, noise):
     command = [binary, "--out", str(out), "--width", "320", "--height", "180",
@@ -111,6 +117,8 @@ def main():
         out = pathlib.Path(directory) / "sweep.png"
 
         for name in names:
+            if name in SKIP:
+                continue
             context = list(CONTEXT.get(name, []))
 
             # Frame count and source noise are forced through the same table,
@@ -147,7 +155,9 @@ def main():
         print("needs a CONTEXT entry saying what else has to be true.")
         return 1
 
-    print(f"all {len(names)} parameters measurably change the picture")
+    swept = len([n for n in names if n not in SKIP])
+    print(f"all {swept} swept parameters measurably change the picture"
+          f" ({len(names) - swept} buffer parameter(s) skipped)")
     return 0
 
 

@@ -47,10 +47,21 @@ std::string glStringOrUnknown( GLenum name )
 const char* const kSourceNames[]     = { "Luma", "Alpha", "Chroma", "Luma or Alpha" };
 const char* const kLayoutNames[]     = { "Spiral", "Angle", "Linear", "Radial", "Random" };
 const char* const kBackgroundNames[] = { "Black", "Source", "Dimmed Source", "Transparent", "Edges" };
+const char* const kSyncNames[]       = { "Free", "Beat", "Bar" };
 
 constexpr int kSourceCount     = 4;
 constexpr int kLayoutCount     = 5;
 constexpr int kBackgroundCount = 5;
+constexpr int kSyncCount       = 3;
+
+/// What Speed means. Free: cycles per second, integrated. Beat and Bar:
+/// cycles per beat or per bar, locked to the host's transport.
+enum SyncMode
+{
+	kSyncFree = 0,
+	kSyncBeat = 1,
+	kSyncBar  = 2,
+};
 
 /// Seconds of host time a single frame is allowed to advance the animation by.
 /// The host's clock is not ours: it jumps when the composition is scrubbed,
@@ -132,6 +143,8 @@ Tinsel::Tinsel()
 	params[ PT_MIX ]        = 1.0f;
 
 	params[ PT_PRESET ] = 0.0f;//Custom: the sliders are the truth
+	params[ PT_SYNC ]   = 0.0f;//Free: v0.1.0's behaviour, and the harness's
+	params[ PT_AUDIO_LEVEL ] = 0.0f;
 
 	//---------------------------------------------------------------------
 	// Declaration.
@@ -208,6 +221,22 @@ Tinsel::Tinsel()
 	for( int i = 0; i < presets::kCount; ++i )
 		SetParamElementInfo( PT_PRESET, 1 + i, presets::kPresets[ i ].name, static_cast< float >( 1 + i ) );
 
+	// What Speed means: cycles per second (Free), or cycles per beat or bar,
+	// phase-locked to Resolume's BPM clock.
+	SetOptionParamInfo( PT_SYNC, "Sync", kSyncCount, params[ PT_SYNC ] );
+	for( int i = 0; i < kSyncCount; ++i )
+		SetParamElementInfo( PT_SYNC, i, kSyncNames[ i ], static_cast< float >( i ) );
+
+	// Audio. An FFT buffer: Resolume shows it as an audio-source picker and
+	// writes one spectrum bin per element. Element defaults are zero on
+	// purpose -- with no audio routed, Audio Level does nothing rather than
+	// the lamps twitching to a phantom signal.
+	SetBufferParamInfo( PT_AUDIO, "Audio", kAudioBins, FF_USAGE_FFT );
+	for( int i = 0; i < kAudioBins; ++i )
+		SetParamElementInfo( PT_AUDIO, i, "", 0.0f );
+
+	SetParamInfof( PT_AUDIO_LEVEL, "Audio Level", FF_TYPE_STANDARD );
+
 	//Thirty-one parameters is well past the point where an ungrouped list in
 	//somebody else's inspector stops being readable.
 	for( FFUInt32 i = PT_SOURCE; i <= PT_STABILITY; ++i )
@@ -221,6 +250,12 @@ Tinsel::Tinsel()
 	for( FFUInt32 i = PT_GLOW; i <= PT_MIX; ++i )
 		SetParamGroup( i, "Output" );
 	SetParamGroup( PT_PRESET, "Preset" );
+	// Not "Pattern", where it logically belongs: SetParamGroup collapses *runs*
+	// of consecutive same-group ids, and PT_SYNC is appended, so it would show
+	// as a second group also titled "Pattern" -- which reads as a bug.
+	SetParamGroup( PT_SYNC, "Tempo" );
+	SetParamGroup( PT_AUDIO, "Audio" );
+	SetParamGroup( PT_AUDIO_LEVEL, "Audio" );
 
 	FFGLLog::LogToHost( "Created Tinsel effect" );
 
@@ -352,15 +387,46 @@ FFResult Tinsel::ProcessOpenGL( ProcessOpenGLStruct* pGL )
 	glGetIntegerv( GL_VIEWPORT, hostViewport );
 
 	//---------------------------------------------------------------------
-	// Time. Integrate the rate; never rescale the history. See Tinsel.h.
+	// Time. In Free mode, integrate the rate; never rescale the history. See
+	// Tinsel.h.
+	//
+	// In Beat and Bar mode the phase is absolute instead: the point of those
+	// modes is that a cycle boundary lands on the host's grid, and an
+	// integrated phase drifts off it. That makes a Speed change jump the
+	// pattern -- which is correct there: the operator asked for a different
+	// musical division, and the new one has to land on the grid too.
 	//---------------------------------------------------------------------
-	const double now = hostTime >= 0.0 ? hostTime : wallSeconds();
-	if( lastHostTime >= 0.0 )
+	const double now  = hostTime >= 0.0 ? hostTime : wallSeconds();
+	const int    sync = static_cast< int >( std::lround( params[ PT_SYNC ] ) );
+	const double speed = static_cast< double >( SpeedFromParam( params[ PT_SPEED ] ) );
+
+	if( sync == kSyncBeat || sync == kSyncBar )
+	{
+		// The host hands us a tempo and a position *within* the current bar,
+		// never which bar it is. Recover a continuous bar number without
+		// keeping state: the clock estimates how many bars have passed,
+		// `barPhase` gives the exact position inside this one, and the whole
+		// number reconciling them is round( estimate - barPhase ). Continuous
+		// across the bar line -- as barPhase wraps 1 to 0 the rounded integer
+		// steps up at the same moment -- and exact while the clock estimate is
+		// within half a bar. (Same recovery as Orrery's Sync modes.)
+		const double tempo      = bpm > 1.0f ? static_cast< double >( bpm ) : 120.0;
+		const double barSeconds = 240.0 / tempo;//four beats to the bar
+		const double estimate   = now / barSeconds;
+		const double within     = std::clamp( static_cast< double >( barPhase ), 0.0, 1.0 );
+
+		const double bars = within + std::round( estimate - within );
+
+		phase = ( sync == kSyncBeat ? bars * 4.0 : bars ) * speed;
+	}
+	else if( lastHostTime >= 0.0 )
 	{
 		const double delta = std::clamp( now - lastHostTime, 0.0, kMaxFrameDelta );
-		phase += delta * static_cast< double >( SpeedFromParam( params[ PT_SPEED ] ) );
+		phase += delta * speed;
 	}
 	lastHostTime = now;
+
+	UpdateAudio();
 
 	//---------------------------------------------------------------------
 	// Buffers.
@@ -502,6 +568,11 @@ FFResult Tinsel::ProcessOpenGL( ProcessOpenGLStruct* pGL )
 		lightShader.Set( "Saturation", SaturationFromParam( params[ PT_SATURATION ] ) );
 		lightShader.Set( "Brightness", BrightnessFromParam( params[ PT_BRIGHTNESS ] ) );
 		lightShader.Set( "SourceTint", params[ PT_SOURCE_TINT ] );
+
+		//FFGLShader::Set has no array overload, so the spectrum goes up raw.
+		lightShader.Set( "AudioLevel", params[ PT_AUDIO_LEVEL ] );
+		glUniform1fv( lightShader.FindUniform( "Audio" ), kAudioBins, audioLevel.data() );
+
 		quad.Draw();
 	}
 
@@ -701,4 +772,35 @@ FFResult Tinsel::SetTime( double time )
 {
 	hostTime = time;
 	return FF_SUCCESS;
+}
+
+void Tinsel::UpdateAudio()
+{
+	const ParamInfo* info = FindParamInfo( PT_AUDIO );
+	if( info == nullptr )
+		return;
+
+	// Frame delta for the release filter, off the same clock everything else
+	// runs on. First frame -- or a clock that has not moved -- snaps instead.
+	const double now = hostTime >= 0.0 ? hostTime : wallSeconds();
+	const double dt  = ( audioClock >= 0.0 && now > audioClock ) ? now - audioClock : 0.0;
+	audioClock       = now;
+
+	// Fast up, slow down -- the same asymmetry as the stabilise pass and for
+	// the same reason: a flash that arrives a frame late reads as broken,
+	// while one that takes ~150 ms to die away reads as intended.
+	const float release = dt > 0.0 ? 1.0f - std::exp( static_cast< float >( -dt / 0.15 ) ) : 1.0f;
+
+	const size_t bins = std::min( info->elements.size(), audioLevel.size() );
+	for( size_t i = 0; i < bins; ++i )
+	{
+		// sqrt because bin magnitudes bunch near zero: a spectrum used raw
+		// lights nothing but the kick drum's lamp.
+		const float raw = std::sqrt( std::max( 0.0f, info->elements[ i ].value ) );
+
+		if( raw >= audioLevel[ i ] )
+			audioLevel[ i ] = raw;
+		else
+			audioLevel[ i ] += ( raw - audioLevel[ i ] ) * release;
+	}
 }
