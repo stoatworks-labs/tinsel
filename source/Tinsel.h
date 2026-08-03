@@ -184,6 +184,24 @@ private:
 	double phase        = 0.0;
 
 	//---------------------------------------------------------------------
+	// Host clock units.
+	//
+	// The FFGL header never says what unit SetTime is in, and hosts disagree:
+	// Resolume hands over MILLISECONDS (measured live: 20.0 per frame at its
+	// 50 fps, and the SDK's own Particles sample divides by 1000), while the
+	// offline harness -- and any host following the header's silence -- sends
+	// seconds. Decide from the first plausible frame delta and stick:
+	// 0.001..0.5 is a seconds-host frame, 2..500 is a milliseconds-host
+	// frame, anything else is a stall or a scrub and keeps waiting.
+	//---------------------------------------------------------------------
+	double clockScale  = 0.0;///< 0 until decided; then 1.0 or 0.001
+	double lastRawTime = -1.0;
+
+	/// Counts frames so the sixtieth can log what the host's clock actually
+	/// looks like. One line, once, in the diag log.
+	int clockFrames = 0;
+
+	//---------------------------------------------------------------------
 	// Audio.
 	//
 	// The host writes one spectrum bin per element of PT_AUDIO; UpdateAudio

@@ -396,7 +396,23 @@ FFResult Tinsel::ProcessOpenGL( ProcessOpenGLStruct* pGL )
 	// pattern -- which is correct there: the operator asked for a different
 	// musical division, and the new one has to land on the grid too.
 	//---------------------------------------------------------------------
-	const double now  = hostTime >= 0.0 ? hostTime : wallSeconds();
+	// Normalise the host's clock to seconds first -- see Tinsel.h: Resolume
+	// sends milliseconds, the harness sends seconds, and the header says
+	// nothing. Until the first plausible frame delta decides, assume seconds;
+	// the decision lands within two frames and the delta clamp below absorbs
+	// the one mis-scaled step a late decision could produce.
+	const double raw = hostTime >= 0.0 ? hostTime : wallSeconds();
+	if( clockScale == 0.0 && lastRawTime >= 0.0 && raw > lastRawTime )
+	{
+		const double d = raw - lastRawTime;
+		if( d >= 0.001 && d <= 0.5 )
+			clockScale = 1.0;
+		else if( d >= 2.0 && d <= 500.0 )
+			clockScale = 0.001;
+	}
+	lastRawTime = raw;
+
+	const double now  = raw * ( clockScale == 0.0 ? 1.0 : clockScale );
 	const int    sync = static_cast< int >( std::lround( params[ PT_SYNC ] ) );
 	const double speed = static_cast< double >( SpeedFromParam( params[ PT_SPEED ] ) );
 
@@ -424,6 +440,14 @@ FFResult Tinsel::ProcessOpenGL( ProcessOpenGLStruct* pGL )
 		const double delta = std::clamp( now - lastHostTime, 0.0, kMaxFrameDelta );
 		phase += delta * speed;
 	}
+
+	if( ++clockFrames == 60 )
+		diag::info( "host clock at frame 60: raw=" + std::to_string( raw )
+		            + " scale=" + std::to_string( clockScale )
+		            + " seconds=" + std::to_string( now )
+		            + " bpm=" + std::to_string( bpm )
+		            + " barPhase=" + std::to_string( barPhase ) );
+
 	lastHostTime = now;
 
 	UpdateAudio();
@@ -781,8 +805,10 @@ void Tinsel::UpdateAudio()
 		return;
 
 	// Frame delta for the release filter, off the same clock everything else
-	// runs on. First frame -- or a clock that has not moved -- snaps instead.
-	const double now = hostTime >= 0.0 ? hostTime : wallSeconds();
+	// runs on -- lastHostTime is the normalised-to-seconds clock the time
+	// block just advanced, so the ms-vs-seconds question is already settled.
+	// First frame -- or a clock that has not moved -- snaps instead.
+	const double now = lastHostTime;
 	const double dt  = ( audioClock >= 0.0 && now > audioClock ) ? now - audioClock : 0.0;
 	audioClock       = now;
 
