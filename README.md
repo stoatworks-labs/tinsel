@@ -5,9 +5,10 @@
 > verified numerically by an offline harness that drives the real plugin class in
 > a headless GL context: it renders the shader at one pixel per lamp and compares
 > the readback against an independent C++ implementation — **527,100 comparisons
-> with zero disagreements** (see [Status](#status)). It has **never been loaded
-> into Resolume** — only compiled, rendered and measured offline. Check it in
-> your own rig before trusting it in a show.
+> with zero disagreements** (see [Status](#status)). Both the macOS universal
+> bundle and the Windows x64 DLL build in CI. It has **never been loaded into
+> Resolume** — only compiled, rendered and measured offline. Check it in your own
+> rig before trusting it in a show.
 
 Finds the outlines in a clip and lights them like a string of LEDs, as an FFGL
 effect for [Resolume](https://resolume.com) Arena and Avenue. Point it at a logo
@@ -130,12 +131,13 @@ Verified by measurement on an M4 Max, macOS 26.4:
 | No dead controls | all **31** parameters measurably change the picture |
 | Palette table | 16 rows, correct order, correct endpoints |
 | macOS binary | universal (`x86_64 arm64`), exports `plugMain` |
+| Windows x64 | builds green in CI, plus the NSIS installer |
 
 Run it yourself with `tools/verify.sh`.
 
-**Not yet done:** never loaded into Resolume, never built on Windows or Linux,
-nothing timed. See [AGENTS.md](AGENTS.md) for the full list of what is assumed
-rather than measured, and for the traps.
+**Not yet done:** never loaded into Resolume, never built on Linux, nothing
+timed. See [AGENTS.md](AGENTS.md) for the full list of what is assumed rather
+than measured, and for the traps.
 
 ## Licence
 

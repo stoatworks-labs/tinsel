@@ -236,6 +236,13 @@ perfectly and prove nothing.
 - **The edge detector does what it claims per mode.** On the test card, the seam
   between two fields of equal luminance is invisible to `Luma` and found by
   `Chroma`, which is the entire reason `Detect On` exists.
+- **Windows x64 compiles**, proven by a `workflow_dispatch` run that built the
+  macOS universal bundle, the Windows `.dll` and the NSIS installer green before
+  anything was tagged. Dispatching that workflow is the cheap way to test an
+  FFGL build without publishing: the release job is gated on `refs/tags/v*`, so
+  a manual run builds and skips publication. The macOS job also asserts `lipo`
+  reports both architectures and `nm` finds `_plugMain`, because neither failure
+  is visible in a build log.
 
 **Assumed, or not yet done:**
 
@@ -244,9 +251,9 @@ perfectly and prove nothing.
   Nothing has driven the host. How the parameters *present* — whether the
   Colour 1/2 triples show as swatches, whether five groups read sensibly in the
   inspector, whether 31 controls is too many in practice — is untested.
-- **Never built on Windows or Linux.** There is no CI here yet and nothing has
-  tried. The code uses nothing platform-specific outside `Diag.cpp`, but that is
-  an argument rather than a build.
+- **Never built on Linux.** There is no CI job for it and nothing has tried. The
+  code uses nothing platform-specific outside `Diag.cpp`, but that is an
+  argument rather than a build.
 - **Nothing timed.** Six passes at picture size plus four at quarter size ought
   to be nothing on a modern GPU, but "ought to be" is not a measurement. The
   stabilise pass's feedback means the cost is per-frame regardless of whether
