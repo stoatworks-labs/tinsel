@@ -14,6 +14,8 @@ Finds the outlines in a clip and lights them like a string of LEDs, as an FFGL
 effect for [Resolume](https://resolume.com) Arena and Avenue. Point it at a logo
 and it becomes a neon sign, a theatre marquee, or a Christmas tree.
 
+**Video:** [What it does, in 50 seconds](https://www.youtube.com/watch?v=-TGCxAFDMYw)
+
 ![Chasing lamps round the outlines in red and green](docs/hero.jpg)
 
 <sub>The repo's test card with a chase running round the detected outlines.
