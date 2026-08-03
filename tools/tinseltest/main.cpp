@@ -40,6 +40,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <chrono>
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -601,6 +602,102 @@ int runEffectCheck()
 }
 
 //---------------------------------------------------------------------------
+// --bench
+//---------------------------------------------------------------------------
+
+/**
+    Time one resolution.
+
+    Two things make this a measurement rather than a number.
+
+    **`glFinish()` on both sides.** GL calls queue; without forcing completion
+    this times how fast the driver accepts commands, which on a deep pipeline is
+    roughly how fast a `for` loop runs and has nothing to do with the GPU. The
+    difference is not subtle -- an unsynchronised version of this reported
+    tenths of a millisecond at 4K.
+
+    **A warm-up that is thrown away.** The first frames pay for buffer
+    allocation, shader specialisation and the mip chains, and the stabilise
+    pass's history has to converge. Those costs are real but they are not the
+    per-frame cost, and averaging them in makes a fast effect look slow in
+    exactly the case -- a short run -- where somebody is most likely to measure.
+*/
+double benchAt( Tinsel& plugin, int width, int height, int frames, double fps )
+{
+	const std::vector< unsigned char > card = buildCard( width, height );
+	const GLuint sourceTexture = makeTexture( width, height, card.data() );
+	const GLuint outputTexture = makeTexture( width, height, nullptr );
+	const GLuint outputFBO     = makeFramebuffer( outputTexture );
+
+	FFGLTextureStruct inputStruct = {};
+	inputStruct.Width = inputStruct.HardwareWidth = static_cast< FFUInt32 >( width );
+	inputStruct.Height = inputStruct.HardwareHeight = static_cast< FFUInt32 >( height );
+	inputStruct.Handle                              = sourceTexture;
+	FFGLTextureStruct* inputs[ 1 ]                  = { &inputStruct };
+
+	ProcessOpenGLStruct process = {};
+	process.numInputTextures    = 1;
+	process.inputTextures       = inputs;
+	process.HostFBO             = outputFBO;
+
+	auto renderOne = [ & ]( int frame ) {
+		plugin.SetTime( static_cast< double >( frame ) / fps );
+		glBindFramebuffer( GL_FRAMEBUFFER, outputFBO );
+		glViewport( 0, 0, width, height );
+		plugin.ProcessOpenGL( &process );
+	};
+
+	const int warmup = 20;
+	for( int frame = 0; frame < warmup; ++frame )
+		renderOne( frame );
+	glFinish();
+
+	const auto start = std::chrono::steady_clock::now();
+	for( int frame = 0; frame < frames; ++frame )
+		renderOne( warmup + frame );
+	glFinish();
+	const auto end = std::chrono::steady_clock::now();
+
+	glDeleteFramebuffers( 1, &outputFBO );
+	glDeleteTextures( 1, &outputTexture );
+	glDeleteTextures( 1, &sourceTexture );
+
+	const double seconds = std::chrono::duration< double >( end - start ).count();
+	return seconds * 1000.0 / static_cast< double >( frames );
+}
+
+int runBench( Tinsel& plugin, int frames, double fps )
+{
+	struct Size
+	{
+		const char* name;
+		int width, height;
+	};
+	const Size sizes[] = {
+		{ "1280x720  ", 1280, 720 },
+		{ "1920x1080 ", 1920, 1080 },
+		{ "2560x1440 ", 2560, 1440 },
+		{ "3840x2160 ", 3840, 2160 },
+	};
+
+	std::printf( "%d frames each, after a 20-frame warm-up, glFinish both sides.\n\n", frames );
+	std::printf( "resolution     ms/frame   equivalent fps   %% of a 60fps frame\n" );
+
+	for( const Size& size : sizes )
+	{
+		const double ms = benchAt( plugin, size.width, size.height, frames, fps );
+		std::printf( "%s    %7.3f       %8.0f            %5.1f%%\n",
+		             size.name, ms, ms > 0.0 ? 1000.0 / ms : 0.0, ms / 16.667 * 100.0 );
+	}
+
+	std::printf( "\nTen passes: six at picture size (copy, edge, stabilise, light,\n"
+	             "composite) and four at quarter size (the glow). The stabilise pass\n"
+	             "feeds back into itself, so the cost is per frame whether or not\n"
+	             "anything in the picture moved.\n" );
+	return 0;
+}
+
+//---------------------------------------------------------------------------
 // --palettes
 //---------------------------------------------------------------------------
 int writePalettes( const std::string& path )
@@ -662,6 +759,7 @@ void usage()
 		"  --set \"Name=V\"    set a parameter by its display name, 0..1. Repeatable.\n"
 		"  --list            print every parameter and its default, then exit\n"
 		"  --effects         run the GLSL effect library against the C++ one\n"
+		"  --bench           time ProcessOpenGL at 720p through 4K\n"
 		"  --palettes PATH   write the palette table as a picture\n"
 		"  --pipe            raw RGBA frames on stdin, raw RGBA frames on stdout\n"
 		"  --script PATH     parameter cues for --pipe: 'frame Name=Value'\n"
@@ -711,6 +809,7 @@ int main( int argc, char** argv )
 	float noise             = 0.0f;
 	bool wantList           = false;
 	bool wantEffects        = false;
+	bool wantBench          = false;
 	bool wantPipe           = false;
 	std::vector< std::string > settings;
 
@@ -748,6 +847,8 @@ int main( int argc, char** argv )
 			wantList = true;
 		else if( argument == "--effects" )
 			wantEffects = true;
+		else if( argument == "--bench" )
+			wantBench = true;
 		else if( argument == "--pipe" )
 			wantPipe = true;
 		else
@@ -816,6 +917,23 @@ int main( int argc, char** argv )
 		CGLSetCurrentContext( nullptr );
 		CGLDestroyContext( context );
 		return 0;
+	}
+
+	if( wantBench )
+	{
+		FFGLViewportStruct benchViewport = {};
+		benchViewport.width  = static_cast< FFUInt32 >( width );
+		benchViewport.height = static_cast< FFUInt32 >( height );
+		if( plugin.InitGL( &benchViewport ) != FF_SUCCESS )
+		{
+			std::fprintf( stderr, "InitGL failed -- see the diagnostics log for which shader\n" );
+			return 1;
+		}
+		const int result = runBench( plugin, frames, fps );
+		plugin.DeInitGL();
+		CGLSetCurrentContext( nullptr );
+		CGLDestroyContext( context );
+		return result;
 	}
 
 	FFGLViewportStruct viewport = {};

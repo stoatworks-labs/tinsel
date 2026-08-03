@@ -132,12 +132,13 @@ Verified by measurement on an M4 Max, macOS 26.4:
 | Palette table | 16 rows, correct order, correct endpoints |
 | macOS binary | universal (`x86_64 arm64`), exports `plugMain` |
 | Windows x64 | builds green in CI, plus the NSIS installer |
+| Render cost | 0.55 ms/frame at 1080p, 2.36 ms at 4K — 14% of a 60fps frame |
 
 Run it yourself with `tools/verify.sh`.
 
-**Not yet done:** never loaded into Resolume, never built on Linux, nothing
-timed. See [AGENTS.md](AGENTS.md) for the full list of what is assumed rather
-than measured, and for the traps.
+**Not yet done:** never loaded into Resolume, never built on Linux. See
+[AGENTS.md](AGENTS.md) for the full list of what is assumed rather than
+measured, and for the traps.
 
 ## Licence
 

@@ -17,6 +17,10 @@
 #   --palettes that the palette table bakes at all. Not pass/fail; it is
 #              written out so a verify run leaves a picture of what the
 #              palettes were on the day.
+#   --bench    the render cost. Also not pass/fail -- there is no threshold
+#              worth asserting on somebody else's GPU -- but a verify run
+#              leaves a timing on the record, which is what turns "it feels
+#              slower" into a comparison.
 #   sweep.py   that no control is silently dead. A GLSL uniform whose name does
 #              not match the C++ is ignored without a word, so this is the only
 #              thing standing between a typo and a shipped slider that does
@@ -67,6 +71,10 @@ else
 	tail -4 /tmp/tinsel-sweep.txt
 	failures+=("sweep")
 fi
+
+echo
+echo "== bench: the render cost, for the record"
+./build/tinseltest --bench --frames 60 2>&1 | sed -n '3,8p'
 
 echo
 echo "== binary: universal, and exports plugMain"

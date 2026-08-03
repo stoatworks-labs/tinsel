@@ -25,6 +25,7 @@ temporal filter.
 - Everything: `tools/verify.sh`
 - GLSL effects vs C++ effects: `./build/tinseltest --effects`
 - No dead controls: `python3 tools/sweep.py`
+- Render cost: `./build/tinseltest --bench` (0.55 ms/frame at 1080p, 2.36 at 4K)
 - Universal + exports: `lipo -archs build-universal/Tinsel.bundle/Contents/MacOS/Tinsel`
   and `nm -gU … | grep _plugMain`
 

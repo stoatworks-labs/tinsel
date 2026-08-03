@@ -236,6 +236,23 @@ perfectly and prove nothing.
 - **The edge detector does what it claims per mode.** On the test card, the seam
   between two fields of equal luminance is invisible to `Luma` and found by
   `Chroma`, which is the entire reason `Detect On` exists.
+- **The render cost**, by `tinseltest --bench` (120 frames each, after a
+  20-frame warm-up, `glFinish` on both sides — without which this times how fast
+  the driver accepts commands rather than how fast the GPU runs them):
+
+  | | ms/frame | % of a 60fps frame |
+  | --- | --- | --- |
+  | 1280×720 | 0.348 | 2.1% |
+  | 1920×1080 | 0.552 | 3.3% |
+  | 2560×1440 | 0.995 | 6.0% |
+  | 3840×2160 | 2.358 | 14.1% |
+
+  So it is comfortably real-time but it is not free: at 4K it takes a seventh of
+  the frame, and an operator stacking four effects on a layer will feel that.
+  The cost is **per frame whether or not anything moved** — the stabilise pass
+  feeds back into itself, so there is no still-image fast path and adding one
+  would mean detecting that the input has not changed, which costs a comparison
+  over the whole frame.
 - **Windows x64 compiles**, proven by a `workflow_dispatch` run that built the
   macOS universal bundle, the Windows `.dll` and the NSIS installer green before
   anything was tagged. Dispatching that workflow is the cheap way to test an
@@ -254,10 +271,7 @@ perfectly and prove nothing.
 - **Never built on Linux.** There is no CI job for it and nothing has tried. The
   code uses nothing platform-specific outside `Diag.cpp`, but that is an
   argument rather than a build.
-- **Nothing timed.** Six passes at picture size plus four at quarter size ought
-  to be nothing on a modern GPU, but "ought to be" is not a measurement. The
-  stabilise pass's feedback means the cost is per-frame regardless of whether
-  anything moved.
+- ~~Nothing timed.~~ **Measured** — see below.
 - **The `Stability` range is judged by eye.** The mapping tops out at a time
   constant of about fifty frames because that is roughly where a lamp hanging on
   after its edge has gone starts reading as a ghost. Where exactly that crossover
