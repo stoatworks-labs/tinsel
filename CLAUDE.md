@@ -21,6 +21,19 @@ temporal filter.
 - Put real footage through the real shaders (for the project video):
   `ffmpeg … -f rawvideo -pix_fmt rgba - | ./build/tinseltest --pipe --width W --height H [--script cues.txt] | ffmpeg …`
 
+## OpenFX build
+- `source/ofx/TinselOFX.cpp` → `build/Tinsel.ofx.bundle` (target `TinselOFX`,
+  `-DBUILD_OFX=OFF` to skip) for Resolve/Vegas/Nuke/Natron. Links Effects/
+  Palette/Controls straight from source; the six GPU passes are mirrored on
+  the CPU. Change a pass in Shaders.cpp, change the matching phase there.
+- Two deliberate departures, both forced by OFX's any-order time model:
+  phase is `time * speed` (not integrated), and the Stability IIR is
+  reconstructed from up to 12 previous frames via OFX temporal clip access —
+  the release rate bounds how far back matters.
+- Smoke test: `../resolume-ofx-bridge/build/ofxprobe --dir build --render com.stoatworks.tinsel --size 640x360 --out /tmp/t.bmp`
+- OFX SDK subset (BSD-3) vendored under `external/openfx`.
+- Install for Resolve: copy the bundle into `/Library/OFX/Plugins`.
+
 ## Verify
 - Everything: `tools/verify.sh`
 - GLSL effects vs C++ effects: `./build/tinseltest --effects`

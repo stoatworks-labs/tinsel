@@ -153,6 +153,23 @@ All builds, checksums and release notes: [github.com/stoatworks-labs/tinsel/rele
 
 <!-- downloads:end -->
 
+## OpenFX — Resolve, Vegas, Nuke, Natron
+
+The same effect also builds as an OpenFX plugin, so it runs in DaVinci Resolve
+(Edit and Color pages, and Fusion), Vegas Pro, Nuke and Natron. The patterns,
+palettes and controls are the same code the FFGL build runs; the temporal
+stability filter is reconstructed from a short window of previous frames, so
+any frame renders identically however the host reaches it.
+
+Grab the `tinsel-ofx-*` zip for your platform from the release and copy
+`Tinsel.ofx.bundle` into the standard OpenFX folder, then restart the host:
+
+```
+macOS    /Library/OFX/Plugins/
+Windows  C:\Program Files\Common Files\OFX\Plugins\
+```
+
+
 ## Status
 
 Verified by measurement on an M4 Max, macOS 26.4:

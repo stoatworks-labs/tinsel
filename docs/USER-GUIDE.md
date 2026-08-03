@@ -47,6 +47,21 @@ On macOS the build is unsigned, so Gatekeeper may quarantine it:
 xattr -dr com.apple.quarantine ~/Documents/Resolume\ Arena/Extra\ Effects/Tinsel.bundle
 ```
 
+### OpenFX hosts (Resolve, Vegas, Nuke, Natron)
+
+Tinsel also ships as an OpenFX plugin — same patterns, same palettes, same
+controls. Copy `Tinsel.ofx.bundle` from the `-ofx-` download into the OpenFX
+folder and restart the host:
+
+```
+macOS    /Library/OFX/Plugins/
+Windows  C:\Program Files\Common Files\OFX\Plugins\
+```
+
+One difference worth knowing: the Stability filter is rebuilt from a short
+window of previous frames each render, so very high Stability settings cost
+render time and are truncated slightly compared with the Resolume build.
+
 ---
 
 ## Start here: get the outline right first
