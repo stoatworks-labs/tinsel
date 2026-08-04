@@ -194,6 +194,10 @@ Run it yourself with `tools/verify.sh`.
 [AGENTS.md](AGENTS.md) for the full list of what is assumed rather than
 measured, and for the traps.
 
+<!-- attributions:start -->
+This project is built on other people's work — see [ATTRIBUTIONS.md](ATTRIBUTIONS.md).
+<!-- attributions:end -->
+
 ## Licence
 
 MIT — see [LICENSE](LICENSE).
