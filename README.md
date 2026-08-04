@@ -153,6 +153,8 @@ macOS will refuse to load the unsigned bundle until it is unquarantined — see
 
 All builds, checksums and release notes: [github.com/stoatworks-labs/tinsel/releases](https://github.com/stoatworks-labs/tinsel/releases).
 
+The Windows builds are unsigned, so SmartScreen warns once.
+
 <!-- downloads:end -->
 
 ## OpenFX — Resolve, Vegas, Nuke, Natron
