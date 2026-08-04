@@ -25,6 +25,10 @@
 #              not match the C++ is ignored without a word, so this is the only
 #              thing standing between a typo and a shipped slider that does
 #              nothing.
+#   the demo   that demo/plugin.js still holds this repo's shader text, character
+#              for character. The browser demo cannot include a C++ file, so the
+#              GLSL lives there a second time; a change here that is not mirrored
+#              there is invisible until the demo behaves unlike the plugin.
 #   the binary that the macOS build is universal and still exports plugMain.
 #              Checked with lipo and nm rather than by reading the build log,
 #              because an arm64-only build logs as a success.
@@ -70,6 +74,15 @@ else
 	echo "   *** dead controls, see /tmp/tinsel-sweep.txt"
 	tail -4 /tmp/tinsel-sweep.txt
 	failures+=("sweep")
+fi
+
+echo
+echo "== demo: the browser demo's GLSL against this repo's"
+if python3 demo/tools/check_shaders.py | tail -1; then
+	:
+else
+	echo "   *** demo/plugin.js is no longer running the plugin's shader"
+	failures+=("demo shaders")
 fi
 
 echo
