@@ -120,8 +120,9 @@ cmake --install build    # → ~/Documents/Resolume Arena/Extra Effects
 macOS builds universal (arm64 + x86_64) by default. Add
 `-DCMAKE_OSX_ARCHITECTURES=arm64` for a faster development build.
 
-macOS will refuse to load the unsigned bundle until it is unquarantined — see
-[docs/UNSIGNED.md](docs/UNSIGNED.md).
+A bundle you build yourself is unsigned, which is fine locally — quarantine only
+applies to files that arrive from a browser. The released macOS builds are
+Developer ID-signed and notarised, so those need nothing either.
 
 <!-- downloads:start -->
 
