@@ -98,7 +98,14 @@ if [[ -f "$bundle" ]]; then
 	[[ "$architectures" == *arm64* && "$architectures" == *x86_64* ]] \
 		|| failures+=("not universal: $architectures")
 
-	if nm -gU "$bundle" 2>/dev/null | grep -q '_plugMain'; then
+	# Captured, then matched from a herestring -- never `nm ... | grep -q`.
+	# Under `set -o pipefail` a `grep -q` that finds its match exits
+	# immediately, the writer upstream takes SIGPIPE, and the PIPELINE
+	# reports failure even though the symbol is there. It is output-size
+	# dependent, so it fires on the bigger binary first and looks
+	# intermittent. A herestring is not a pipeline, so nothing can SIGPIPE.
+	symbols=$( nm -gU "$bundle" 2>/dev/null || true )
+	if grep -q '_plugMain' <<<"$symbols"; then
 		echo "   exports _plugMain"
 	else
 		failures+=("no _plugMain export -- the host will load the bundle and find no plugins")
