@@ -154,7 +154,7 @@ Developer ID-signed and notarised, so those need nothing either.
 
 All builds, checksums and release notes: [github.com/stoatworks-labs/tinsel/releases](https://github.com/stoatworks-labs/tinsel/releases).
 
-The Windows builds are unsigned, so SmartScreen warns once.
+macOS builds are signed and notarised and open normally. The Windows builds are unsigned, so SmartScreen warns once.
 
 <!-- downloads:end -->
 
