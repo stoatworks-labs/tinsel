@@ -12,6 +12,7 @@
 #include <ffglex/FFGLScopedFBOBinding.h>
 
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <cmath>
 #include <string>
@@ -77,6 +78,21 @@ double wallSeconds()
 	using namespace std::chrono;
 	static const steady_clock::time_point start = steady_clock::now();
 	return duration_cast< duration< double > >( steady_clock::now() - start ).count();
+}
+
+/// Case-insensitive name order, so a list sorts the way a reader expects it to
+/// rather than the way a byte comparison does. Every name here happens to be
+/// capitalised the same way today; that is not a thing to depend on.
+bool nameLess( const char* a, const char* b )
+{
+	for( ; *a && *b; ++a, ++b )
+	{
+		const int ca = std::tolower( static_cast< unsigned char >( *a ) );
+		const int cb = std::tolower( static_cast< unsigned char >( *b ) );
+		if( ca != cb )
+			return ca < cb;
+	}
+	return *b != '\0';
 }
 } // namespace
 
@@ -154,10 +170,44 @@ Tinsel::Tinsel()
 	// default into 0..1 *before* a range can be attached (SDK b1afaf9), so a
 	// parameter declared in lamps cannot declare a default in lamps. The
 	// conversions live in Controls.cpp.
+	//
+	// Option lists are declared in alphabetical order, and every entry keeps
+	// the value it has always had. Those are two separate things in FFGL:
+	// SetParamElementInfo takes an element's display slot and its stored value
+	// as different arguments, and the spec is explicit that picking an option
+	// gives the parameter "a value equal to that of the option's value" — the
+	// slot is never stored. Everything on this side reads the value too;
+	// params[] goes to the shader untouched. So the list can be re-sorted for
+	// whoever has to find Meteor in it without a saved composition, a factory
+	// preset or the harness changing meaning: the entry that has always stored
+	// 8 still stores 8, it has just moved.
+	//
+	// Sorting is the operator's interest, not ours — twenty patterns and
+	// sixteen palettes are otherwise in the order they were written in, which
+	// is no order at all from outside this file. Reported as tinsel#4.
 	//---------------------------------------------------------------------
+
+	/// Declare an option's elements alphabetically, each keeping its value.
+	/// The first `pinned` values stay at the top of the list in ordinal order:
+	/// those are the entries whose position is the meaning rather than the
+	/// name, and sorting them would say something untrue about them.
+	auto declareOptions = [ this ]( unsigned int paramID, int count, int pinned, auto nameOf ) {
+		std::vector< int > order( static_cast< size_t >( count ) );
+		for( int i = 0; i < count; ++i )
+			order[ i ] = i;
+
+		std::stable_sort( order.begin() + pinned, order.end(),
+		                  [ & ]( int a, int b ) { return nameLess( nameOf( a ), nameOf( b ) ); } );
+
+		for( int slot = 0; slot < count; ++slot )
+			SetParamElementInfo( paramID,
+			                     static_cast< unsigned int >( slot ),
+			                     nameOf( order[ slot ] ),
+			                     static_cast< float >( order[ slot ] ) );
+	};
+
 	SetOptionParamInfo( PT_SOURCE, "Detect On", kSourceCount, params[ PT_SOURCE ] );
-	for( int i = 0; i < kSourceCount; ++i )
-		SetParamElementInfo( PT_SOURCE, i, kSourceNames[ i ], static_cast< float >( i ) );
+	declareOptions( PT_SOURCE, kSourceCount, 0, []( int v ) { return kSourceNames[ v ]; } );
 
 	SetParamInfof( PT_SENSITIVITY, "Sensitivity", FF_TYPE_STANDARD );
 	SetParamInfof( PT_SOFTNESS, "Softness", FF_TYPE_STANDARD );
@@ -166,8 +216,7 @@ Tinsel::Tinsel()
 	SetParamInfof( PT_STABILITY, "Stability", FF_TYPE_STANDARD );
 
 	SetOptionParamInfo( PT_LAYOUT, "Layout", kLayoutCount, params[ PT_LAYOUT ] );
-	for( int i = 0; i < kLayoutCount; ++i )
-		SetParamElementInfo( PT_LAYOUT, i, kLayoutNames[ i ], static_cast< float >( i ) );
+	declareOptions( PT_LAYOUT, kLayoutCount, 0, []( int v ) { return kLayoutNames[ v ]; } );
 
 	SetParamInfof( PT_TURNS, "Turns", FF_TYPE_STANDARD );
 	SetParamInfof( PT_LAYOUT_ANGLE, "Direction", FF_TYPE_STANDARD );
@@ -176,15 +225,18 @@ Tinsel::Tinsel()
 	SetParamInfof( PT_REVERSE, "Reverse", FF_TYPE_BOOLEAN );
 
 	SetOptionParamInfo( PT_EFFECT, "Pattern", static_cast< int >( Effect::Count ), params[ PT_EFFECT ] );
-	for( int i = 0; i < static_cast< int >( Effect::Count ); ++i )
-		SetParamElementInfo( PT_EFFECT, i, EffectName( static_cast< Effect >( i ) ), static_cast< float >( i ) );
+	declareOptions( PT_EFFECT, static_cast< int >( Effect::Count ), 0,
+	                []( int v ) { return EffectName( static_cast< Effect >( v ) ); } );
 
 	SetParamInfof( PT_SPEED, "Speed", FF_TYPE_STANDARD );
 	SetParamInfof( PT_INTENSITY, "Intensity", FF_TYPE_STANDARD );
 
+	//Colour 1 and Colour 1 > 2 are pinned to the top. They are the two that are
+	//not baked palettes at all -- they are driven by the colour pickers below,
+	//and reading them as the head of the list is what says so.
 	SetOptionParamInfo( PT_PALETTE, "Palette", static_cast< int >( Palette::Count ), params[ PT_PALETTE ] );
-	for( int i = 0; i < static_cast< int >( Palette::Count ); ++i )
-		SetParamElementInfo( PT_PALETTE, i, PaletteName( static_cast< Palette >( i ) ), static_cast< float >( i ) );
+	declareOptions( PT_PALETTE, static_cast< int >( Palette::Count ), 2,
+	                []( int v ) { return PaletteName( static_cast< Palette >( v ) ); } );
 
 	SetParamInfof( PT_SPREAD, "Spread", FF_TYPE_STANDARD );
 
@@ -206,8 +258,7 @@ Tinsel::Tinsel()
 	SetParamInfof( PT_GLOW_SIZE, "Glow Size", FF_TYPE_STANDARD );
 
 	SetOptionParamInfo( PT_BACKGROUND, "Background", kBackgroundCount, params[ PT_BACKGROUND ] );
-	for( int i = 0; i < kBackgroundCount; ++i )
-		SetParamElementInfo( PT_BACKGROUND, i, kBackgroundNames[ i ], static_cast< float >( i ) );
+	declareOptions( PT_BACKGROUND, kBackgroundCount, 0, []( int v ) { return kBackgroundNames[ v ]; } );
 
 	SetParamInfof( PT_DIM, "Dim", FF_TYPE_STANDARD );
 	SetParamInfof( PT_MIX, "Mix", FF_TYPE_STANDARD );
@@ -216,13 +267,25 @@ Tinsel::Tinsel()
 	// preset's values into the covered parameters and raises value events so
 	// the host re-reads the sliders. Editing a covered slider flips back to
 	// Custom.
+	//
+	// Custom is pinned to the top and the presets sort below it. It is not a
+	// preset — it is the statement that there isn't one — so a list that filed
+	// it under C between Candy Wipe and Christmas Chase would be lying about
+	// what it is. Its value stays 0, which is what applyPreset's 1-based index
+	// and the sweep's Preset context both read.
 	SetOptionParamInfo( PT_PRESET, "Preset", 1 + presets::kCount, params[ PT_PRESET ] );
-	SetParamElementInfo( PT_PRESET, 0, "Custom", 0.0f );
-	for( int i = 0; i < presets::kCount; ++i )
-		SetParamElementInfo( PT_PRESET, 1 + i, presets::kPresets[ i ].name, static_cast< float >( 1 + i ) );
+	declareOptions( PT_PRESET, 1 + presets::kCount, 1, []( int v ) {
+		return v == 0 ? "Custom" : presets::kPresets[ v - 1 ].name;
+	} );
 
 	// What Speed means: cycles per second (Free), or cycles per beat or bar,
 	// phase-locked to Resolume's BPM clock.
+	//
+	// Deliberately not sorted, and not an oversight to tidy up later: Free,
+	// Beat, Bar is a progression from no clock to the slowest division of one,
+	// and the reader is following that rather than looking a name up. Sorted it
+	// reads Bar, Beat, Free, which puts the two locked modes either side of the
+	// unlocked one and says nothing true about any of them.
 	SetOptionParamInfo( PT_SYNC, "Sync", kSyncCount, params[ PT_SYNC ] );
 	for( int i = 0; i < kSyncCount; ++i )
 		SetParamElementInfo( PT_SYNC, i, kSyncNames[ i ], static_cast< float >( i ) );

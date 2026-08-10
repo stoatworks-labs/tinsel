@@ -308,9 +308,52 @@ echoing our own writes cannot un-set the preset.
 
 A preset covers layout, animation, colour and look. The Edge group is
 deliberately untouched — sensitivity and thickness are tuned to the operator's
-artwork. The sweep needs its CONTEXT entry for Preset: position 1 is the
-defaults, named, and applied over defaults it provably changes nothing.
+artwork. The sweep needs its CONTEXT entry for Preset: **value** 1 is the
+defaults, named ("Warm Twinkle"), and applied over defaults it provably changes
+nothing. Value, not dropdown position — see below, they are no longer the same
+number.
 
 Verified by rendering a preset and its hand-set equivalent through the offline
 harness and `ofxprobe --edit` (which delivers the set as a real user edit,
 with `kOfxActionInstanceChanged`) and comparing byte-for-byte.
+
+## Dropdown order, and why the two builds differ
+
+The FFGL dropdowns are **sorted alphabetically; the OFX ones are not**. That is
+deliberate, it is not drift, and the fix for it is not to make them match.
+
+FFGL keeps an element's *display slot* and its *stored value* apart —
+`SetParamElementInfo` takes both, and the spec says picking an option gives the
+parameter "a value equal to that of the option's value". Nothing here reads the
+slot: `params[]` goes to the shader untouched. So the lists were sorted for
+whoever has to find Meteor among twenty patterns, and every entry kept the value
+it shipped with. A saved composition, a factory preset and `sweep.py` all still
+mean what they meant (tinsel#4).
+
+OFX has no such split. `appendOption` takes a name and nothing else, and the
+choice **index is the value** — it is what `setChoice`/`choiceDiffers` compare
+against the preset table and what a saved Resolve project stores. Sorting there
+would silently repoint every existing project at a different pattern. So it
+stays in enum order.
+
+Two things follow, and both are traps:
+
+- **Do not reorder `Effect`, `Palette` or `kPresets` to tidy the list.** The
+  enum ordinal *is* the saved value on both sides. Sorting the enum breaks every
+  saved composition and every Resolve project at once, which is exactly what
+  sorting the display avoided.
+- **Do not "fix" the OFX side to match the FFGL side.** The asymmetry is the
+  cost of not breaking saved work, and it costs presentation only — both builds
+  still map the same value to the same pattern, so a preset cannot drift between
+  Resolume and Resolve.
+
+Three lists are exempt from the sort, because position is their meaning:
+**Sync** (Free → Beat → Bar is a progression, not a list to look a name up in),
+**Preset** (Custom pinned at the top: it is the absence of a preset, not one
+filed under C), and the first two **Palette** entries (Colour 1 and Colour 1 > 2
+are driven by the colour pickers rather than baked, and heading the list is what
+says so).
+
+Verified by dumping every element as (slot, name, value) against the real plugin
+class: lists alphabetical, values unmoved, defaults still Twinkle/Warm White,
+`--effects` and `sweep.py` unchanged.
