@@ -135,9 +135,9 @@ Developer ID-signed and notarised, so those need nothing either.
 
 | Build | Download | Size |
 | --- | --- | --- |
-| Universal (Apple Silicon + Intel) · .dmg disk image | [`tinsel-1.0.0-macos-universal.dmg`](https://github.com/stoatworks-labs/tinsel/releases/download/v1.0.0/tinsel-1.0.0-macos-universal.dmg) | 463 KB |
-| Universal (Apple Silicon + Intel) · .zip archive | [`tinsel-macos-universal.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-macos-universal.zip) | 190 KB |
-| Universal (Apple Silicon + Intel) · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`tinsel-ofx-macos-universal.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-ofx-macos-universal.zip) | 265 KB |
+| Universal (Apple Silicon + Intel) · .dmg disk image | [`tinsel-1.0.0-macos-universal.dmg`](https://github.com/stoatworks-labs/tinsel/releases/download/v1.0.0/tinsel-1.0.0-macos-universal.dmg) | 491 KB |
+| Universal (Apple Silicon + Intel) · .zip archive | [`tinsel-macos-universal.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-macos-universal.zip) | 208 KB |
+| Universal (Apple Silicon + Intel) · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`tinsel-ofx-macos-universal.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-ofx-macos-universal.zip) | 278 KB |
 
 </details>
 
