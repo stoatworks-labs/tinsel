@@ -41,11 +41,10 @@ Avenue uses the same layout under its own folder name. Tinsel then appears in th
 
 **Needs Resolume Arena or Avenue 7.3.1 or newer.**
 
-On macOS the build is unsigned, so Gatekeeper may quarantine it:
-
-```bash
-xattr -dr com.apple.quarantine ~/Documents/Resolume\ Arena/Extra\ Effects/Tinsel.bundle
-```
+The macOS builds are **Developer ID-signed and notarised**, so the bundle simply loads — there is
+nothing to clear and no `xattr` step. The Windows builds are not code-signed, but plugin files are
+not gated the way `.exe` files are, so Resolume loads them normally; only the installer trips
+SmartScreen, once: **More info** → **Run anyway**.
 
 ### OpenFX hosts (Resolve, Vegas, Nuke, Natron)
 
