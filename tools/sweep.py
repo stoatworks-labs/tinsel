@@ -108,6 +108,11 @@ def main():
         if len(parts) == 2:
             names.append(parts[1].rsplit(None, 1)[0].strip())
 
+    # The About block is a text field and browser buttons, declared last. They
+    # never touch a pixel, so sweeping them only buries a real dead control.
+    if "About" in names:
+        names = names[: names.index("About")]
+
     if not names:
         print("no parameters found")
         return 2

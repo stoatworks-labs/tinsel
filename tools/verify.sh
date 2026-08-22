@@ -51,6 +51,15 @@ fi
 
 failures=()
 
+# The parameter plumbing first: it needs no GPU, it takes a moment, and it is
+# the half an external user actually got stuck on (vertigo issue #2).
+echo "== presets: every factory preset survives every host behaviour"
+if ./build/tinseltest --presets | tail -1; then
+	:
+else
+	failures+=("presets")
+fi
+
 echo "== effects: GLSL against C++"
 if ./build/tinseltest --effects | tail -2; then
 	:
