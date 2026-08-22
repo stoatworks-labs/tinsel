@@ -30,6 +30,9 @@
 #include "ofxsImageEffect.h"
 #include "ofxsProcessing.h"
 
+// After the OFX Support headers, which is where the OFX types come from.
+#include "StoatworksAboutOFX.h"
+
 #include "../Controls.h"
 #include "../Effects.h"
 #include "../Palette.h"
@@ -451,6 +454,10 @@ public:
 
 	void changedParam( const OFX::InstanceChangedArgs& args, const std::string& paramName ) override
 	{
+		// The About links open a browser and change nothing about the render.
+		if( stoatworks::about::ofx::changedParam( args, paramName ) )
+			return;
+
 		using namespace tinsel::presets;
 
 		if( paramName == kParamPreset )
@@ -1324,6 +1331,11 @@ void TinselPluginFactory::describeInContext( OFX::ImageEffectDescriptor& desc, O
 		->setParent( *output );
 	defineSlider( desc, page, kParamMix, "Mix", "Dry/wet with the untouched clip.", 1.0 )
 		->setParent( *output );
+
+	// The Stoatworks About block: a read-only credit line and one push button
+	// per link, in a group that starts folded. Last, so it sits under the
+	// effect's own controls.
+	stoatworks::about::ofx::describe( desc, page );
 }
 
 OFX::ImageEffect* TinselPluginFactory::createInstance( OfxImageEffectHandle handle, OFX::ContextEnum )

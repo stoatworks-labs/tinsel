@@ -73,6 +73,9 @@ constexpr double kMaxFrameDelta = 0.25;
 
 /// Wall clock, for hosts that never call SetTime. Steady rather than system,
 /// so nothing here moves when the machine's clock is corrected.
+/// Frames that must agree before the host's clock unit is settled.
+constexpr int kClockVotes = 4;
+
 double wallSeconds()
 {
 	using namespace std::chrono;
@@ -320,6 +323,18 @@ Tinsel::Tinsel()
 	SetParamGroup( PT_AUDIO, "Audio" );
 	SetParamGroup( PT_AUDIO_LEVEL, "Audio" );
 
+	// The About block. Declared inline rather than through a helper, because
+	// SetParamInfo is protected on CFFGLPlugin and nothing outside the class
+	// can call it.
+	SetParamInfo( PT_ABOUT_FIRST, "About", FF_TYPE_TEXT, stoatworks::about::defaultText() );
+	{
+		FFUInt32 aboutId = PT_ABOUT_FIRST + 1;
+		for( const auto& b : stoatworks::about::buttons() )
+			SetParamInfo( aboutId++, b.label, FF_TYPE_EVENT, false );
+	}
+	for( FFUInt32 i = PT_ABOUT_FIRST; i < PT_COUNT; ++i )
+		SetParamGroup( i, "About" );
+
 	FFGLLog::LogToHost( "Created Tinsel effect" );
 
 	diag::init();
@@ -464,18 +479,50 @@ FFResult Tinsel::ProcessOpenGL( ProcessOpenGLStruct* pGL )
 	// nothing. Until the first plausible frame delta decides, assume seconds;
 	// the decision lands within two frames and the delta clamp below absorbs
 	// the one mis-scaled step a late decision could produce.
-	const double raw = hostTime >= 0.0 ? hostTime : wallSeconds();
-	if( clockScale == 0.0 && lastRawTime >= 0.0 && raw > lastRawTime )
-	{
-		const double d = raw - lastRawTime;
-		if( d >= 0.001 && d <= 0.5 )
-			clockScale = 1.0;
-		else if( d >= 2.0 && d <= 500.0 )
-			clockScale = 0.001;
-	}
-	lastRawTime = raw;
+	// steady_clock says how much real time passed, the host says how much host
+	// time passed, and the ratio names the unit outright -- 1 for seconds,
+	// 1000 for milliseconds, and nothing plausible in between. This replaced a
+	// guess made from the magnitude of a single frame delta, which had three
+	// holes: a delta between 0.5 and 2.0 decided nothing, a burst of sub-0.5 ms
+	// frames at load locked it to "seconds" for the session, and while
+	// undecided it assumed seconds -- precisely the millisecond host's wrong
+	// answer.
+	const double wallNow = wallSeconds();
+	if( wallStart < 0.0 )
+		wallStart = wallNow;
 
-	const double now  = raw * ( clockScale == 0.0 ? 1.0 : clockScale );
+	const double raw = hostTime;
+
+	if( clockScale == 0.0 && raw >= 0.0 && lastRawTime >= 0.0 && lastWallTime >= 0.0 )
+	{
+		const double hostDelta = raw - lastRawTime;
+		const double wallDelta = wallNow - lastWallTime;
+
+		// A paused host, a looping clip or a stalled frame tells us nothing.
+		if( hostDelta > 0.0 && wallDelta >= 0.0005 )
+		{
+			const double ratio = hostDelta / wallDelta;
+			if( ratio > 0.1 && ratio < 10.0 )
+				++secondsVotes;
+			else if( ratio > 100.0 && ratio < 10000.0 )
+				++millisVotes;
+
+			// Several frames rather than one, so a single odd frame cannot
+			// decide it alone.
+			if( secondsVotes >= kClockVotes || millisVotes >= kClockVotes )
+				clockScale = millisVotes > secondsVotes ? 0.001 : 1.0;
+		}
+	}
+
+	if( raw >= 0.0 )
+		lastRawTime = raw;
+	lastWallTime = wallNow;
+
+	// Until the unit is settled -- and for a host that never calls SetTime --
+	// run on the real clock: wrong in origin but right in rate, where assuming
+	// seconds would be a thousand times fast on Resolume.
+	const double now = ( raw >= 0.0 && clockScale != 0.0 ) ? raw * clockScale
+	                                                       : wallNow - wallStart;
 	const int    sync = static_cast< int >( std::lround( params[ PT_SYNC ] ) );
 	const double speed = static_cast< double >( SpeedFromParam( params[ PT_SPEED ] ) );
 
@@ -785,6 +832,11 @@ FFResult Tinsel::SetFloatParameter( unsigned int index, float value )
 	if( index >= PT_COUNT )
 		return FF_FAIL;
 
+	// The About buttons open a browser and store nothing, so they are handled
+	// before the params[] write below -- there is no value to keep.
+	if( index >= PT_ABOUT_FIRST )
+		return stoatworks::about::handleParam( index - PT_ABOUT_FIRST, value ) ? FF_SUCCESS : FF_FAIL;
+
 	if( index == PT_PRESET )
 	{
 		const int chosen = static_cast< int >( std::lround( value ) );
@@ -855,6 +907,30 @@ float Tinsel::GetFloatParameter( unsigned int index )
 	return params[ index ];
 }
 
+//---------------------------------------------------------------------------
+char* Tinsel::GetTextParameter( unsigned int index )
+{
+	if( index == PT_ABOUT_FIRST )
+	{
+		aboutText = stoatworks::about::textParam( 0 );
+		return const_cast< char* >( aboutText.c_str() );
+	}
+
+	return CFFGLPlugin::GetTextParameter( index );
+}
+
+//---------------------------------------------------------------------------
+FFResult Tinsel::SetTextParameter( unsigned int index, const char* value )
+{
+	// See the declaration: the base class fails, and a failed default deletes
+	// the instance. The About line is display-only, so there is genuinely
+	// nothing to store -- but it has to say so successfully.
+	if( index == PT_ABOUT_FIRST )
+		return FF_SUCCESS;
+
+	return CFFGLPlugin::SetTextParameter( index, value );
+}
+
 FFResult Tinsel::SetTime( double time )
 {
 	hostTime = time;
@@ -892,4 +968,9 @@ void Tinsel::UpdateAudio()
 		else
 			audioLevel[ i ] += ( raw - audioLevel[ i ] ) * release;
 	}
+}
+
+void Tinsel::SetClockScaleForTest( double scale )
+{
+	clockScale = scale;
 }

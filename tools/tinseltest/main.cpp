@@ -647,6 +647,7 @@ void driveClock( Tinsel& plugin, double seconds )
 {
 	constexpr double kBpm       = 120.0;
 	constexpr double barSeconds = 240.0 / kBpm;
+	plugin.SetClockScaleForTest( 1.0 );//seconds, said out loud rather than inferred
 	plugin.SetTime( seconds );
 	plugin.SetBeatInfo( static_cast< float >( kBpm ),
 	                    static_cast< float >( std::fmod( seconds, barSeconds ) / barSeconds ) );

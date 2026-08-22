@@ -2,10 +2,12 @@
 
 #include "PassBuffer.h"
 #include "Presets.h"
+#include "StoatworksAboutParams.h"
 
 #include <FFGLSDK.h>
 
 #include <array>
+#include <string>
 
 /// Spectrum bins in the Audio buffer parameter, and in the light shader's
 /// `Audio[]` uniform. The two must agree, and the shader's is a literal.
@@ -47,6 +49,12 @@ constexpr int kAudioBins = 64;
 class Tinsel : public CFFGLPlugin
 {
 public:
+	/// Clock test hook. The offline harness DECLARES its unit rather than
+	/// leaving the calibration to infer one -- an absolute time handed over in
+	/// a single frame is genuinely ambiguous, and an implicit unit is what let
+	/// the millisecond bug through in the first place.
+	void SetClockScaleForTest( double scale );
+
 	Tinsel();
 
 	//CFFGLPlugin
@@ -58,6 +66,14 @@ public:
 	float GetFloatParameter( unsigned int index ) override;
 
 	FFResult SetTime( double time ) override;
+
+	char* GetTextParameter( unsigned int index ) override;
+
+	/// Declared only so the About line can accept its own default.
+	/// instantiateGL pushes every declared default back through the setters and
+	/// deletes the whole instance if one fails, and CFFGLPlugin's
+	/// SetTextParameter is a stub that returns exactly that failure.
+	FFResult SetTextParameter( unsigned int index, const char* value ) override;
 
 	/// The order the host shows them in: find the outline, decide where the
 	/// string runs, choose the pattern, colour it, and put it back over the
@@ -120,7 +136,13 @@ public:
 		PT_AUDIO,
 		PT_AUDIO_LEVEL,
 
-		PT_COUNT
+		//About. FFGL has no window and cannot make one, so the name, the
+		//version, the maker and the links are parameters the host draws with
+		//everything else. Last in the enum, like PT_SYNC and PT_AUDIO before
+		//it, so no saved composition's parameter ids shift.
+		//See StoatworksAboutParams.h.
+		PT_ABOUT_FIRST,
+		PT_COUNT = PT_ABOUT_FIRST + stoatworks::about::kParamCount
 	};
 
 private:
@@ -195,6 +217,10 @@ private:
 	// frame, anything else is a stall or a scrub and keeps waiting.
 	//---------------------------------------------------------------------
 	double clockScale  = 0.0;///< 0 until decided; then 1.0 or 0.001
+	double lastWallTime = -1.0;
+	double wallStart    = -1.0;
+	int secondsVotes    = 0;
+	int millisVotes     = 0;
 	double lastRawTime = -1.0;
 
 	/// Counts frames so the sixtieth can log what the host's clock actually
@@ -220,5 +246,9 @@ private:
 	/// outlines, which lingers for as long as Stability is set to hold things.
 	bool historyValid = false;
 
-	float params[ PT_COUNT ];
+	float params[ PT_COUNT ] = {};
+
+	/// GetTextParameter hands the host a bare pointer, so the string has to
+	/// outlive the call.
+	std::string aboutText;
 };
