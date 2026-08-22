@@ -128,16 +128,16 @@ Developer ID-signed and notarised, so those need nothing either.
 
 ## Download
 
-**[v1.0.1](https://github.com/stoatworks-labs/tinsel/releases/tag/v1.0.1)** — prebuilt for macOS and Windows. Pick your platform:
+**[v1.0.2](https://github.com/stoatworks-labs/tinsel/releases/tag/v1.0.2)** — prebuilt for macOS and Windows. Pick your platform:
 
 <details>
 <summary><b>macOS</b> — Universal (Apple Silicon + Intel)</summary>
 
 | Build | Download | Size |
 | --- | --- | --- |
-| Universal (Apple Silicon + Intel) · .dmg disk image | [`tinsel-1.0.1-macos-universal.dmg`](https://github.com/stoatworks-labs/tinsel/releases/download/v1.0.1/tinsel-1.0.1-macos-universal.dmg) | 491 KB |
-| Universal (Apple Silicon + Intel) · .zip archive | [`tinsel-macos-universal.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-macos-universal.zip) | 208 KB |
-| Universal (Apple Silicon + Intel) · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`tinsel-ofx-macos-universal.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-ofx-macos-universal.zip) | 278 KB |
+| Universal (Apple Silicon + Intel) · .dmg disk image | [`tinsel-1.0.2-macos-universal.dmg`](https://github.com/stoatworks-labs/tinsel/releases/download/v1.0.2/tinsel-1.0.2-macos-universal.dmg) | 491 KB |
+| Universal (Apple Silicon + Intel) · .zip archive | [`tinsel-macos-universal.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-macos-universal.zip) | 213 KB |
+| Universal (Apple Silicon + Intel) · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`tinsel-ofx-macos-universal.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-ofx-macos-universal.zip) | 285 KB |
 
 </details>
 
@@ -146,9 +146,9 @@ Developer ID-signed and notarised, so those need nothing either.
 
 | Build | Download | Size |
 | --- | --- | --- |
-| x64 · .exe installer | [`tinsel-1.0.1-windows-x86_64-setup.exe`](https://github.com/stoatworks-labs/tinsel/releases/download/v1.0.1/tinsel-1.0.1-windows-x86_64-setup.exe) | 229 KB |
-| x64 · .zip archive | [`tinsel-windows-x86_64.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-windows-x86_64.zip) | 125 KB |
-| x64 · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`tinsel-ofx-windows-x86_64.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-ofx-windows-x86_64.zip) | 79 KB |
+| x64 · .exe installer | [`tinsel-1.0.2-windows-x86_64-setup.exe`](https://github.com/stoatworks-labs/tinsel/releases/download/v1.0.2/tinsel-1.0.2-windows-x86_64-setup.exe) | 233 KB |
+| x64 · .zip archive | [`tinsel-windows-x86_64.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-windows-x86_64.zip) | 130 KB |
+| x64 · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`tinsel-ofx-windows-x86_64.zip`](https://github.com/stoatworks-labs/tinsel/releases/latest/download/tinsel-ofx-windows-x86_64.zip) | 85 KB |
 
 </details>
 
