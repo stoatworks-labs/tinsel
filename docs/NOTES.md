@@ -35,7 +35,15 @@ tracing work; v0.1 delivers a temporally stabilised edge *field* instead.
 **Verified** (M4 Max, macOS 26.4): 527,100 GLSL-vs-C++ comparisons, 0
 disagreements; all 31 params measurably live; universal binary exports
 `plugMain`; Windows x64 green in CI; **0.55 ms/frame at 1080p, 2.36 at 4K**
-(14% of a 60fps frame). **Never loaded into Resolume**; never built on Linux.
+(14% of a 60fps frame). **Never loaded into Resolume**, and never loaded into
+Resolve.
+
+**The OpenFX build ships for Linux** as of 2026-08-25 (AlmaLinux 8 container
+for glibc 2.28, Resolve's Rocky 8.6 floor; proven by `dlopen` on Rocky 8 rather
+than argued). Tinsel was one of four plugins the load test caught failing with
+`undefined symbol: pthread_create` -- pthreads are still in libpthread at glibc
+2.28, and the OFX target linked none. It compiled, linked, exported
+`OfxGetPlugin` and passed a glibc-version check first.
 
 Siblings and shared patterns: [asciify](https://github.com/stoatworks-labs/asciify/blob/main/docs/NOTES.md) (`asciify`) style repo layout,
 [old cathode](https://github.com/stoatworks-labs/old-cathode/blob/main/docs/NOTES.md) (`old-cathode`), [porthole](https://github.com/stoatworks-labs/porthole/blob/main/docs/NOTES.md) (`porthole`), [ffgl sdk bugs](https://github.com/stoatworks-labs/fleet-notes/blob/main/notes/reference_ffgl_sdk_bugs.md).

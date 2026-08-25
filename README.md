@@ -190,7 +190,8 @@ Verified by measurement on an M4 Max, macOS 26.4:
 
 Run it yourself with `tools/verify.sh`.
 
-**Not yet done:** never loaded into Resolume, never built on Linux. See
+**Not yet done:** never loaded into Resolume, and never loaded into Resolve.
+The OpenFX plugin *is* built for Linux and proven to load on Rocky 8 in CI. See
 [AGENTS.md](AGENTS.md) for the full list of what is assumed rather than
 measured, and for the traps.
 

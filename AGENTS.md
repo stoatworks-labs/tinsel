@@ -268,9 +268,15 @@ perfectly and prove nothing.
   Nothing has driven the host. How the parameters *present* — whether the
   Colour 1/2 triples show as swatches, whether five groups read sensibly in the
   inspector, whether 31 controls is too many in practice — is untested.
-- **Never built on Linux.** There is no CI job for it and nothing has tried. The
-  code uses nothing platform-specific outside `Diag.cpp`, but that is an
-  argument rather than a build.
+- **The OpenFX plugin is built and load-tested on Linux.** The `linux-ofx` job
+  builds it in an AlmaLinux 8 container with `TINSEL_BUILD_FFGL=OFF` -- the
+  FFGL SDK has no Linux path and its `find_package(GLEW REQUIRED)` would fail
+  at configure time for a plugin that makes no GL call. `linux-load` then
+  `dlopen`s the result on Rocky 8 and calls the entry points a host calls
+  first. Tinsel was one of four plugins that failed that test the first time,
+  with `undefined symbol: pthread_create`: on glibc 2.28 pthreads still live in
+  libpthread, and nothing linked it. The **FFGL** plugin remains macOS/Windows
+  only, because Resolume has no Linux build.
 - ~~Nothing timed.~~ **Measured** — see below.
 - **The `Stability` range is judged by eye.** The mapping tops out at a time
   constant of about fifty frames because that is roughly where a lamp hanging on
