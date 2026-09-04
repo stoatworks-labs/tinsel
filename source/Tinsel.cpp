@@ -30,7 +30,7 @@ static CFFGLPluginInfo PluginInfo(
 	0,                                                        // Plugin major version number
 	1,                                                        // Plugin minor version number
 	FF_EFFECT,                                                // Plugin type
-	"Lights the outlines in the clip like a string of LEDs",  // Plugin description
+	"Finds the outlines in the clip and lights them like a string of LEDs. Point it at a logo and it becomes a neon sign, a theatre marquee or a Christmas tree.\n\nAn effect never chooses a colour. It says where in the palette a lamp sits and how bright it is, and the palette turns the first of those into RGB - which is how an LED controller is built, and why twenty effects and sixteen palettes are worth more than thirty-six of either.\n\nHonest expectation: this is best on logos, titles and line art, where there are real outlines to find. Busy footage gives it too many edges and the string stops reading as a string.\n\nStart from a Preset, at the bottom.",// Plugin description
 	"Tinsel FFGL effect"                                      // About
 );
 
