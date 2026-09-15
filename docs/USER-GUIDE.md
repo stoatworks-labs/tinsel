@@ -6,6 +6,10 @@ along them, then runs the kind of pattern an LED controller runs: chases, comets
 scanner, a wipe. Point it at a logo and it becomes a neon sign, a theatre marquee, or a Christmas
 tree.
 
+![Figures from Resolume's own demo media with their outlines lit, rendered by the plugin's own offline harness in a headless GL context — not a Resolume screen…](neon.jpg)
+
+*Figures from Resolume's own demo media with their outlines lit, rendered by the plugin's own offline harness in a headless GL context — not a Resolume screen capture. Real frames through the real shipped shaders.*
+
 The idea it is built on is the one an LED controller is built on: **a pattern never chooses a
 colour.** It decides *where in the palette* each lamp sits and *how bright* it is, and the palette
 turns the first of those into RGB. That is why twenty patterns and sixteen palettes are worth more
