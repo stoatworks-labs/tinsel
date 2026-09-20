@@ -24,7 +24,7 @@ using namespace tinsel;
 static CFFGLPluginInfo PluginInfo(
 	PluginFactory< Tinsel >,                                  // Create method
 	"TN01",                                                   // Plugin unique ID of maximum length 4.
-	"Tinsel",                                                 // Plugin name
+	"SW Tinsel",                                              // Plugin name
 	2,                                                        // API major version number
 	1,                                                        // API minor version number
 	0,                                                        // Plugin major version number
