@@ -175,6 +175,13 @@ palettes and controls are the same code the FFGL build runs; the temporal
 stability filter is reconstructed from a short window of previous frames, so
 any frame renders identically however the host reaches it.
 
+**Fusion reports no frame rate; there, time-based controls assume 24 fps.**
+Resolve's Fusion page gives an OpenFX plugin no frame rate at all, and the first
+OpenFX builds failed every render there. Now Tinsel falls back to 24, Resolve's
+default timeline rate, so in Fusion Speed runs as if the composition were 24 fps
+whatever its real rate. A host that reports a rate, Resolve's Edit page included,
+gets its own.
+
 Grab the `tinsel-ofx-*` zip for your platform from the release and copy
 `Tinsel.ofx.bundle` into the standard OpenFX folder, then restart the host:
 
