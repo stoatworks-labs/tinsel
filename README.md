@@ -206,7 +206,10 @@ Verified by measurement on an M4 Max, macOS 26.4:
 
 Run it yourself with `tools/verify.sh`.
 
-**Not yet done:** never loaded into Resolume, and never loaded into Resolve.
+**Not yet done:** never loaded into Resolume. The OpenFX build has only been
+run as a tool on Resolve's Fusion page (DaVinci Resolve Studio 21.1 on macOS,
+MediaIn → Tinsel → MediaOut, 2026-10-04), from v1.0.7, which fixed every render
+failing there; never on Resolve's other pages, in Vegas, Nuke or Natron.
 The OpenFX plugin *is* built for Linux and proven to load on Rocky 8 in CI. See
 [AGENTS.md](AGENTS.md) for the full list of what is assumed rather than
 measured, and for the traps.
