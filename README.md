@@ -2,38 +2,39 @@
 
 > **AI-assisted project.** This codebase was created with [Claude](https://claude.com/claude-code)
 > (Anthropic), directed and reviewed by a human author. The pattern library is
-> verified numerically by an offline harness that drives the real plugin class in
+> verified numerically by an offline harness that drives the plugin's own class in
 > a headless GL context: it renders the shader at one pixel per lamp and compares
-> the readback against an independent C++ implementation — **527,100 comparisons
+> the readback against an independent C++ implementation, **527,100 comparisons
 > with zero disagreements** (see [Status](#status)). Both the macOS universal
-> bundle and the Windows x64 DLL build in CI. It has **never been loaded into
-> Resolume** — only compiled, rendered and measured offline. Check it in your own
+> bundle and the Windows x64 DLL build in CI. It's **never been loaded into
+> Resolume**, only compiled, rendered and measured offline. Check it in your own
 > rig before trusting it in a show.
 
 Finds the outlines in a clip and lights them like a string of LEDs, as an FFGL
 effect for [Resolume](https://resolume.com) Arena and Avenue. Point it at a logo
-and it becomes a neon sign, a theatre marquee, or a Christmas tree.
+and it turns into a neon sign, a theatre marquee or a Christmas tree, depending on
+how festive the client's feeling.
 
 **Video:** [What it does, in 50 seconds](https://www.youtube.com/watch?v=-TGCxAFDMYw)
 
 ![Chasing lamps round the outlines in red and green](docs/hero.jpg)
 
-<sub>The repo's test card with a chase running round the detected outlines.
-Rendered by `tinseltest`, the offline harness.</sub>
+<sub>The repo's test card with a chase running round the detected outlines,
+rendered by `tinseltest` (the offline harness).</sub>
 
 ## An effect never chooses a colour
 
-That is the whole design, and everything else follows from it.
+That's the design, and everything else follows from it.
 
-A pattern answers two questions about one lamp — **where in the palette** it
+A pattern answers two questions about one lamp: **where in the palette** it
 sits, and **how bright** it is. The palette turns the first of those into RGB.
-It is how an LED controller is built, and it is why twenty patterns and sixteen
+It's how an LED controller is built, and it's why twenty patterns and sixteen
 palettes are worth more than thirty-six of either: Comet on **Christmas** is a
 red-and-green chaser, Comet on **Frost** is a shooting star, and neither is the
 other wearing a hat.
 
-It also means a pattern is a pure function of *(lamp, time)* — no state, no
-history — which is what makes it testable. The library exists twice, once in
+It also means a pattern is a pure function of *(lamp, time)*, with no state and
+no history, which is what makes it testable. The library exists twice, once in
 C++ and once in GLSL, and the harness proves they agree.
 
 **Twenty patterns:** Solid, Gradient, Rainbow, Colour Loop, Chase, Theater
@@ -47,20 +48,20 @@ Mono.
 
 ![The sixteen palettes](docs/palettes.png)
 
-<sub>The baked palette table. The top two rows are black because they are drawn
+<sub>The baked palette table. The top two rows are black because they're drawn
 from the Colour 1 and Colour 2 controls rather than from the table.</sub>
 
 The palettes are **authored here, not imported.** WLED is EUPL-1.2 and FastLED's
-gradient palettes carry cpt-city's own terms; neither is MIT and this repo is.
-Nothing was copied from either — the patterns are implemented from a description
-of what each one does.
+gradient palettes carry cpt-city's own terms; neither is MIT, and this repo is.
+Nothing was copied from either: the patterns were written from a description of
+what each one does.
 
 ## Lamps or rope, from one control
 
 ![A rainbow running round a continuous neon rope](docs/neon.jpg)
 
 Lamp Size is a radius **in pixels**. Wind it up past half the lamp spacing and
-the lamps run into each other and the strip becomes a continuous rope — the
+the lamps run into each other and the strip becomes a continuous rope: the
 neon-sign look, from the same control rather than a second mode.
 
 ![Warm white lamps twinkling](docs/twinkle.jpg)
@@ -83,31 +84,31 @@ matters more than the operator does:
 
 **Detail** runs the operator at a coarser scale, so it finds the shape of a logo
 rather than the texture inside it. **Stability** is a temporal filter for
-footage — deliberately asymmetric, rising almost instantly and falling slowly,
-because what goes wrong on video is not that edges move but that they drop out
-for a frame and the lamp blinks.
+footage. It's asymmetric on purpose, rising almost instantly and falling slowly,
+because the trouble on video is edges dropping out for a frame, which makes the
+lamp blink.
 
-**Background → Edges** shows the mask on its own, which is how Sensitivity,
-Detail and Thickness are actually set — judging a threshold through a layer of
-lamps and glow is guesswork.
+**Background → Edges** shows the mask on its own, which is how you actually set
+Sensitivity, Detail and Thickness. Judging a threshold through a layer of lamps
+and glow is guesswork.
 
 ## What this release does not do
 
 The strip coordinate is a **field**, not an arc length. The plugin computes a
-scalar for every pixel — a spiral about the artwork's centroid by default —
-quantises it into lamps, and runs the patterns on that. It does not trace the
+scalar for every pixel (a spiral about the artwork's centroid by default),
+quantises it into lamps, and runs the patterns on that. It doesn't trace the
 contour.
 
 So a chase **climbs the shape the way a string wound round a tree climbs it**,
-which is the intended look and is faithful to what a real strip does. But it is
-**not** a chase that follows the letterform of an `S` round its own curve, and
-separate parts of a shape are not wired in series.
+which is the intended look and is faithful to what a real strip does. But it
+**isn't** a chase that follows the letterform of an `S` round its own curve, and
+separate parts of a shape aren't wired in series.
 
 Contour tracing is planned for v0.2. The controls are already the ones it needs.
 
 ## Build
 
-Needs CMake and the Resolume FFGL SDK, which is a submodule.
+You'll need CMake and the Resolume FFGL SDK, which is a submodule.
 
 ```bash
 git clone --recursive https://github.com/stoatworks-labs/tinsel
@@ -120,8 +121,8 @@ cmake --install build    # → ~/Documents/Resolume Arena/Extra Effects
 macOS builds universal (arm64 + x86_64) by default. Add
 `-DCMAKE_OSX_ARCHITECTURES=arm64` for a faster development build.
 
-A bundle you build yourself is unsigned, which is fine locally — quarantine only
-applies to files that arrive from a browser. The released macOS builds are
+A bundle you build yourself is unsigned, which is fine locally, since quarantine
+only applies to files that arrive from a browser. The released macOS builds are
 Developer ID-signed and notarised, so those need nothing either.
 
 <!-- downloads:start -->
@@ -206,12 +207,12 @@ Verified by measurement on an M4 Max, macOS 26.4:
 
 Run it yourself with `tools/verify.sh`.
 
-**Not yet done:** never loaded into Resolume. The OpenFX build has only been
-run as a tool on Resolve's Fusion page (DaVinci Resolve Studio 21.1 on macOS,
+**Not done yet:** it's never been loaded into Resolume. The OpenFX build has only
+been run as a tool on Resolve's Fusion page (DaVinci Resolve Studio 21.1 on macOS,
 MediaIn → Tinsel → MediaOut, 2026-10-04), from v1.0.7, which fixed every render
-failing there; never on Resolve's other pages, in Vegas, Nuke or Natron.
-The OpenFX plugin *is* built for Linux and proven to load on Rocky 8 in CI. See
-[AGENTS.md](AGENTS.md) for the full list of what is assumed rather than
+failing there. It's never been run on Resolve's other pages, or in Vegas, Nuke or
+Natron. The OpenFX plugin *is* built for Linux and proven to load on Rocky 8 in CI.
+See [AGENTS.md](AGENTS.md) for the full list of what's assumed rather than
 measured, and for the traps.
 
 <!-- attributions:start -->
