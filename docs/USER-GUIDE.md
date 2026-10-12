@@ -25,8 +25,9 @@ a shooting star, and neither is the other with a different colour on it.
 >
 > Still open: it's **never been loaded into Resolume**. Everything about how the controls
 > *present* in the host is untested: whether the Colour 1 and Colour 2 triples show as swatches,
-> and whether five groups of 31 controls read sensibly in the inspector. Performance has never
-> been measured. Try it on a spare layer before you put it in a show.
+> and whether five groups of 31 controls read sensibly in the inspector. Render cost has only been
+> measured in the offline harness on an M4 Max: 0.55 ms a frame at 1080p, 2.36 ms at 4K. Try it on
+> a spare layer before you put it in a show.
 >
 > This codebase was created with AI assistance, directed and reviewed by a human author.
 

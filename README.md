@@ -104,7 +104,7 @@ which is the intended look and is faithful to what a real strip does. But it
 **isn't** a chase that follows the letterform of an `S` round its own curve, and
 separate parts of a shape aren't wired in series.
 
-Contour tracing is planned for v0.2. The controls are already the ones it needs.
+Contour tracing isn't written yet. The controls are already the ones it needs.
 
 ## Build
 
@@ -170,8 +170,10 @@ macOS builds are signed and notarised and open normally. The Windows builds are 
 
 ## OpenFX — Resolve, Vegas, Nuke, Natron
 
-The same effect also builds as an OpenFX plugin, so it runs in DaVinci Resolve
-(Edit and Color pages, and Fusion), Vegas Pro, Nuke and Natron. The patterns,
+The same effect also builds as an OpenFX plugin, for DaVinci Resolve (Edit and
+Color pages, and Fusion), Vegas Pro, Nuke and Natron, though it's only been run in
+Resolve, as a Fusion tool on macOS; the other pages and hosts are untested (see
+[Status](#status)). The patterns,
 palettes and controls are the same code the FFGL build runs; the temporal
 stability filter is reconstructed from a short window of previous frames, so
 any frame renders identically however the host reaches it.
