@@ -17,6 +17,8 @@ how festive the client's feeling.
 
 **Video:** [What it does, in 50 seconds](https://www.youtube.com/watch?v=-TGCxAFDMYw)
 
+The [project page](https://stoatworks-labs.com/software/tinsel/) has the downloads, the [user guide](https://stoatworks-labs.com/software/tinsel/guide/), the video and the [browser demo](https://tinsel-demo.stoatworks-labs.com/).
+
 ![Chasing lamps round the outlines in red and green](docs/hero.jpg)
 
 <sub>The repo's test card with a chase running round the detected outlines,
